@@ -1,0 +1,104 @@
+import os
+import re
+from datetime import date, datetime
+
+from flask import Flask, render_template, request
+from markupsafe import Markup, escape
+
+import tsd
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+# Use ./templates if present, otherwise look next to app.py (flat download)
+TPL = os.path.join(HERE, "templates")
+app = Flask(__name__, template_folder=TPL if os.path.isdir(TPL) else HERE)
+
+BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+
+
+def rich(text):
+    """Escape text, then turn **word** into bold. Safe against HTML in the input."""
+    return Markup(BOLD_RE.sub(r"<strong>\1</strong>", str(escape(text))))
+
+
+def pretty_date(s):
+    try:
+        d = datetime.strptime(s, "%Y-%m-%d").date()
+        return f"{d:%A, %B} {d.day}, {d.year}"
+    except ValueError:
+        return s or ""
+
+
+SAMPLE = r"""[ODOMETER CHECK]
+# mileage | instruction | | | general | suffix
+0.00 | Start of odometer check at mile marker 0
+1.00 | Mile marker 1
+2.00 | Mile marker 2
+3.00 | Mile marker 3 | | | End of check
+OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car number + 20 minutes | +20 | 30 | Car 1 out at 9:51
+
+[RALLY]
+# mileage | instruction | speed | pause | general | suffix
+1.20 | **Left** at stop sign onto **Oak Rd** | | | | FLR
+3.45 | Right at T onto County Rd 5 | 35 | |
+@4.20 | Bear left at fork (mileage hidden from participants)
+5.10 | Pass red barn on right | | | @Secret check: barn number
+7.80 | Left at Y | 25 | NEXTMIN | CP 1 - hidden
+9.50 | Straight at 4-way.\nSpeed zone ahead - watch for signs | 40 | |
+12.00 | Enter **transit zone**. No timing. | | | End of timed section
+
+[TRANSIT]
+12.00 | Obey all traffic laws
+15.00 | Left at light
+OUTPOINT | 18.00 | Out point: Fire Station.\nYou have **15 minutes** from the start of the zone | +15 | 35
+
+[RALLY]
+18.50 | Right at stop sign | | | | FLR
+25.00 | FINISH | | | Finish
+"""
+
+
+@app.route("/")
+def index():
+    return render_template("index.html", sample=SAMPLE, today=date.today().isoformat())
+
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    f = request.form
+    mode = f.get("mode", "participant")
+    whole_min = f.get("resolution") == "minute"
+    segments, errors = tsd.parse_input(f.get("data", ""))
+    start = tsd.parse_clock(f.get("start_time") or "09:00:00")
+    tsd.compute(segments, errors, start)
+    rows = [r for s in segments for r in s.rows]
+
+    for r in rows:   # instruction, then pause, then CAST, then suffix (e.g. FLR)
+        instr = re.sub(r"(\s*\\n)+\s*$", "", r.instruction)   # ignore trailing line breaks
+        bits = [instr] if instr else []
+        if r.next_min:
+            bits.append("**Next minute out**")
+        elif r.pause:
+            bits.append("**Pause %g**" % r.pause)
+        if r.speed is not None:
+            bits.append("**CAST %g**" % r.speed)
+        if r.suffix:
+            bits.append(r.suffix)
+        r.lines = [rich(l) for l in tsd.split_lines(", ".join(bits))]
+        r.plain = rich(" ".join(l for l in tsd.split_lines(r.instruction) if l))
+        r.general = rich(r.general)
+
+    for seg in segments:   # a leg distance next to a hidden mileage would give it away
+        for i, r in enumerate(seg.rows):
+            r.hide_leg = r.hide_mileage or (i > 0 and seg.rows[i - 1].hide_mileage)
+
+    return render_template(
+        "output.html", segments=segments, errors=errors, mode=mode,
+        title=f.get("title", "Rally"), subtitle=f.get("subtitle", "").strip(),
+        date_text=pretty_date(f.get("event_date", "")),
+        show_leg=bool(f.get("show_leg")),
+        clock=lambda t: tsd.fmt_clock(t, whole_min), elapsed=tsd.fmt_elapsed,
+    )
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
