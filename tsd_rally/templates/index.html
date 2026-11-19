@@ -45,7 +45,7 @@
  </table>
  <p>Files: load a <code>.txt</code> file in this format, or a <code>.csv</code> with the columns
  <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks; rows like <code>Title,My Rally</code> or <code>Date,2026-11-21</code> set the title area).
- Use <b>Save as text file</b> to keep your route for later.</p>
+ Use <b>Save as text file</b> or <b>Save as CSV</b> (opens in Excel or Google Sheets; reload it later with Load file) to keep your route.</p>
 
  <p>Instruction numbers run on continuously through the odometer check, rally sections and transit zones.</p>
 </details>
@@ -54,6 +54,7 @@
  <div class="toolbar">
   <label>Load file: <input type="file" id="file" accept=".txt,.text,.tsd,.csv,text/plain,text/csv"></label>
   <button type="button" id="save">Save as text file</button>
+  <button type="button" id="save-csv">Save as CSV</button>
   <span id="status"></span>
  </div>
  <textarea name="data" id="data" spellcheck="false">{{ sample }}</textarea>
@@ -98,7 +99,8 @@ function parseCSV(text) {
 function csvToText(text) {
   const out = [];
   for (let cells of parseCSV(text)) {
-    cells = cells.map(c => c.trim().replace(/\s*\r?\n\s*/g, '\\n').replace(/\|/g, '/'));
+    if ((cells[0] || '').trim().startsWith('#')) { out.push(cells[0].trim().replace(/\r?\n/g, ' ')); continue; }   // comment row
+    cells = cells.map(c => c.trim().replace(/[ \t]*\r?\n[ \t]*/g, '\\n').replace(/\|/g, '/'));
     while (cells.length && cells[cells.length - 1] === '') cells.pop();
     if (!cells.length) continue;
     if (/^(mile(s|age)?|odo(meter)?|dist(ance)?)$/i.test(cells[0])) continue;   // header row
@@ -108,6 +110,29 @@ function csvToText(text) {
     out.push(cells.join(' | '));
   }
   return out.join('\n') + '\n';
+}
+// Convert the pipe-separated text (plus title-area values) into CSV. Section headers and comments are
+// single-cell rows; "\n" in an instruction becomes a real line break inside the cell.
+function csvCell(s) { return /[",\r\n]|^\s|\s$/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function textToCsv(text, head) {
+  const data = [];
+  let width = 6;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('#') || /^\[.*\]$/.test(line)) { data.push({ cells: [line], pad: false }); continue; }
+    const cells = line.split('|').map(c => c.trim().replace(/\\n/g, '\n'));
+    width = Math.max(width, cells.length);
+    data.push({ cells, pad: true });
+  }
+  const rows = head.map(([k, v]) => [k, v]);
+  if (data.length) rows.push(['Mileage', 'Instruction', 'Speed', 'Pause', 'Suffix', 'General']);
+  for (const d of data) {
+    const cells = d.cells.slice();
+    while (d.pad && cells.length < width) cells.push('');
+    rows.push(cells);
+  }
+  return rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
 //</csv
 
@@ -187,21 +212,33 @@ function headerFromBox() { const n = pullHeader(); if (n) status.textContent = n
 box.addEventListener('paste', () => setTimeout(headerFromBox, 0));
 box.addEventListener('change', headerFromBox);
 
-document.getElementById('save').addEventListener('click', () => {
-  headerFromBox();
-  const head = [];
-  if (fields.title.value.trim()) head.push('Title: ' + fields.title.value.trim());
-  if (fields.subtitle.value.trim()) head.push('Subtitle: ' + fields.subtitle.value.trim());
-  if (fields.date.value) head.push('Date: ' + fields.date.value);
-  if (fields.start.value) head.push('Start time: ' + fields.start.value);
-  const text = (head.length ? head.join('\n') + '\n\n' : '') + box.value;
-  const name = (fields.title.value || 'rally').trim()
-    .replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') || 'rally';
+function headPairs() {
+  const p = [];
+  if (fields.title.value.trim()) p.push(['Title', fields.title.value.trim()]);
+  if (fields.subtitle.value.trim()) p.push(['Subtitle', fields.subtitle.value.trim()]);
+  if (fields.date.value) p.push(['Date', fields.date.value]);
+  if (fields.start.value) p.push(['Start time', fields.start.value]);
+  return p;
+}
+function baseName() {
+  return (fields.title.value || 'rally').trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') || 'rally';
+}
+function download(name, content, type) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-  a.download = name + '.txt';
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(a.href);
-  status.textContent = 'Saved ' + name + '.txt (with header)';
+  status.textContent = 'Saved ' + name;
+}
+document.getElementById('save').addEventListener('click', () => {
+  headerFromBox();
+  const head = headPairs().map(([k, v]) => k + ': ' + v);
+  download(baseName() + '.txt', (head.length ? head.join('\n') + '\n\n' : '') + box.value, 'text/plain');
+});
+document.getElementById('save-csv').addEventListener('click', () => {
+  headerFromBox();
+  // BOM so Excel reads the file as UTF-8
+  download(baseName() + '.csv', '\uFEFF' + textToCsv(box.value, headPairs()), 'text/csv;charset=utf-8');
 });
 </script></body></html>
