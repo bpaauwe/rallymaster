@@ -28,6 +28,7 @@
   <tr><td>Rally instruction</td><td><code>mileage | instruction | speed | pause | suffix | general</code></td></tr>
   <tr><td>Odometer check or transit zone instruction</td><td><code>mileage | instruction | | | suffix | general</code> &nbsp;(no speed or pause; not timed; no checkpoints)</td></tr>
   <tr><td>Out point (ends an odometer check or transit zone and starts a timed leg)</td><td><code>OUTPOINT | mileage | instruction | out time | speed | suffix | general</code></td></tr>
+  <tr><td>File header (optional)</td><td><code>Title: ...</code> &nbsp; <code>Subtitle: ...</code> &nbsp; <code>Date: 2026-11-21</code> &nbsp; <code>Start time: 09:30:00</code> &mdash; one per line, usually at the top. When a file is loaded or pasted they fill in the form fields below and are removed from the text. <b>Save as text file</b> writes them back in.</td></tr>
   <tr><td>Section headers</td><td><code>[ODOMETER CHECK]</code> &nbsp; <code>[TRANSIT]</code> &nbsp; <code>[RALLY]</code> &mdash; use as many sections as you need, in order (lines with no header are rally lines)</td></tr>
   <tr><td>Comment</td><td>a line starting with <code>#</code> is ignored</td></tr>
  </table>
@@ -43,7 +44,7 @@
   <tr><td><code>\n</code> in an instruction</td><td>Starts a new line. Use <code>\n\n</code> for a blank line between paragraphs.</td></tr>
  </table>
  <p>Files: load a <code>.txt</code> file in this format, or a <code>.csv</code> with the columns
- <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks).
+ <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks; rows like <code>Title,My Rally</code> or <code>Date,2026-11-21</code> set the title area).
  Use <b>Save as text file</b> to keep your route for later.</p>
 
  <p>Instruction numbers run on continuously through the odometer check, rally sections and transit zones.</p>
@@ -59,9 +60,9 @@
 
  <fieldset><legend>Output options</legend>
   <label>Title <input name="title" id="title" value="My TSD Rally" size="28"></label>
-  <label>Subtitle (optional) <input name="subtitle" value="Autumn Classic - Route 2" size="28"></label><br>
-  <label>Date <input type="date" name="event_date" value="{{ today }}"></label>
-  <label>Start time (master times) <input type="time" step="1" name="start_time" value="09:30:00"></label><br>
+  <label>Subtitle (optional) <input name="subtitle" id="subtitle" value="Autumn Classic - Route 2" size="28"></label><br>
+  <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
+  <label>Start time (master times) <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label><br>
   <label><input type="radio" name="mode" value="participant" checked> Participant</label>
   <label><input type="radio" name="mode" value="master"> Rally master</label><br>
   <label>Time resolution
@@ -101,11 +102,67 @@ function csvToText(text) {
     while (cells.length && cells[cells.length - 1] === '') cells.pop();
     if (!cells.length) continue;
     if (/^(mile(s|age)?|odo(meter)?|dist(ance)?)$/i.test(cells[0])) continue;   // header row
+    if (/^(title|subtitle|date|start( time)?)$/i.test(cells[0]) && cells.length >= 2) {   // title-area row
+      out.push(cells[0] + ': ' + cells[1]); continue;
+    }
     out.push(cells.join(' | '));
   }
   return out.join('\n') + '\n';
 }
 //</csv
+
+//<hdr
+// "Title: ...", "Subtitle: ...", "Date: ...", "Start time: ..." lines at the top of the text.
+const HEADER_RE = /^\s*(title|subtitle|date|start(?:\s*time)?)\s*:\s*(.*?)\s*$/i;
+function splitHeader(text) {
+  const found = {}, rest = [];
+  for (const line of text.split(/\r?\n/)) {
+    const m = HEADER_RE.exec(line);
+    if (m && !line.includes('|')) {
+      const k = m[1].toLowerCase().startsWith('start') ? 'start' : m[1].toLowerCase();
+      found[k] = m[2];
+    } else rest.push(line);
+  }
+  return { found, rest: rest.join('\n').replace(/^\s*\n/, '') };
+}
+const pad = n => String(n).padStart(2, '0');
+function normTime(s) {            // -> 'HH:MM:SS' for <input type=time>, or null
+  const m = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\s*$/i.exec(s);
+  if (!m) return null;
+  let h = +m[1]; const ap = (m[4] || '').toLowerCase();
+  if (ap === 'pm' && h < 12) h += 12; else if (ap === 'am' && h === 12) h = 0;
+  return pad(h) + ':' + m[2] + ':' + pad(m[3] || 0);
+}
+function normDate(s) {            // -> 'YYYY-MM-DD' for <input type=date>, or null
+  let m = /^\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*$/.exec(s);
+  if (m) return m[1] + '-' + pad(m[2]) + '-' + pad(m[3]);
+  m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s);
+  if (m) return m[3] + '-' + pad(m[1]) + '-' + pad(m[2]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+//</hdr
+
+const fields = {
+  title: document.getElementById('title'), subtitle: document.getElementById('subtitle'),
+  date: document.getElementById('event_date'), start: document.getElementById('start_time'),
+};
+// Move header lines from the text box into the form fields. Returns a note for the status line.
+function pullHeader() {
+  const { found, rest } = splitHeader(box.value);
+  const keys = Object.keys(found);
+  if (!keys.length) return '';
+  const done = [], bad = [];
+  for (const k of keys) {
+    let v = found[k];
+    if (k === 'date') v = normDate(v);
+    if (k === 'start') v = normTime(v);
+    if (v === null) bad.push(k); else { fields[k].value = v; done.push(k); }
+  }
+  box.value = rest;
+  return (done.length ? ' - header applied: ' + done.join(', ') : '') +
+         (bad.length ? ' - could not read ' + bad.join(', ') : '');
+}
 
 function loadFile(file) {
   if (!file) return;
@@ -115,8 +172,9 @@ function loadFile(file) {
     const isCsv = /\.csv$/i.test(file.name) || file.type === 'text/csv';
     if (isCsv) text = csvToText(text);
     box.value = text;
+    const note = pullHeader();
     status.textContent = 'Loaded ' + file.name + (isCsv ? ' (converted from CSV)' : '') +
-      ' - ' + text.split(/\r?\n/).filter(l => l.trim()).length + ' lines';
+      ' - ' + box.value.split(/\r?\n/).filter(l => l.trim()).length + ' lines' + note;
   };
   reader.onerror = () => { status.textContent = 'Could not read ' + file.name; };
   reader.readAsText(file);
@@ -124,15 +182,26 @@ function loadFile(file) {
 document.getElementById('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
 box.addEventListener('dragover', e => e.preventDefault());
 box.addEventListener('drop', e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+// Header lines typed or pasted into the box are also moved into the form fields
+function headerFromBox() { const n = pullHeader(); if (n) status.textContent = n.replace(/^ - /, ''); }
+box.addEventListener('paste', () => setTimeout(headerFromBox, 0));
+box.addEventListener('change', headerFromBox);
 
 document.getElementById('save').addEventListener('click', () => {
-  const name = (document.getElementById('title').value || 'rally').trim()
+  headerFromBox();
+  const head = [];
+  if (fields.title.value.trim()) head.push('Title: ' + fields.title.value.trim());
+  if (fields.subtitle.value.trim()) head.push('Subtitle: ' + fields.subtitle.value.trim());
+  if (fields.date.value) head.push('Date: ' + fields.date.value);
+  if (fields.start.value) head.push('Start time: ' + fields.start.value);
+  const text = (head.length ? head.join('\n') + '\n\n' : '') + box.value;
+  const name = (fields.title.value || 'rally').trim()
     .replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') || 'rally';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([box.value], { type: 'text/plain' }));
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   a.download = name + '.txt';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(a.href);
-  status.textContent = 'Saved ' + name + '.txt';
+  status.textContent = 'Saved ' + name + '.txt (with header)';
 });
 </script></body></html>

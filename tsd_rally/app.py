@@ -21,11 +21,13 @@ def rich(text):
 
 
 def pretty_date(s):
-    try:
-        d = datetime.strptime(s, "%Y-%m-%d").date()
-        return f"{d:%A, %B} {d.day}, {d.year}"
-    except ValueError:
-        return s or ""
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y", "%b %d, %Y", "%d %B %Y"):
+        try:
+            d = datetime.strptime(s.strip(), fmt).date()
+            return f"{d:%A, %B} {d.day}, {d.year}"
+        except ValueError:
+            pass
+    return s or ""   # free text is shown as typed
 
 
 SAMPLE = r"""[ODOMETER CHECK]
@@ -69,8 +71,16 @@ def generate():
     f = request.form
     mode = f.get("mode", "participant")
     whole_min = f.get("resolution") == "minute"
-    segments, errors = tsd.parse_input(f.get("data", ""))
-    start = tsd.parse_clock(f.get("start_time") or "09:00:00")
+    # Header lines in the text (Title:, Subtitle:, Date:, Start time:) override the form fields
+    meta, text = tsd.extract_header(f.get("data", ""))
+    segments, errors = tsd.parse_input(text)
+    try:
+        start = tsd.parse_time_text(meta["start"]) if "start" in meta else None
+    except ValueError as e:
+        errors.append(f"Header: {e}; using the form's start time")
+        start = None
+    if start is None:
+        start = tsd.parse_clock(f.get("start_time") or "09:00:00")
     tsd.compute(segments, errors, start)
     rows = [r for s in segments for r in s.rows]
 
@@ -110,8 +120,9 @@ def generate():
 
     return render_template(
         "output.html", segments=segments, errors=errors, mode=mode,
-        title=f.get("title", "Rally"), subtitle=f.get("subtitle", "").strip(),
-        date_text=pretty_date(f.get("event_date", "")),
+        title=meta.get("title", f.get("title", "Rally")),
+        subtitle=meta.get("subtitle", f.get("subtitle", "")).strip(),
+        date_text=pretty_date(meta.get("date", f.get("event_date", ""))),
         show_leg=bool(f.get("show_leg")),
         clock=lambda t: tsd.fmt_clock(t, whole_min), elapsed=tsd.fmt_elapsed,
         cptime=lambda s: tsd.fmt_ms(s, whole_min),

@@ -66,6 +66,38 @@ def parse_clock(text: str) -> float:
     return parts[0] * 3600 + parts[1] * 60 + parts[2]
 
 
+HEADER_RE = re.compile(r"^\s*(title|subtitle|date|start(?:\s*time)?)\s*:\s*(.*?)\s*$", re.I)
+
+
+def extract_header(text: str):
+    """Pull 'Title: ...', 'Subtitle: ...', 'Date: ...', 'Start time: ...' lines out of the text.
+    Returns (meta, text). Header lines are blanked (not removed) so error line numbers stay right."""
+    meta, out = {}, []
+    for line in text.splitlines():
+        m = HEADER_RE.match(line)
+        if m and "|" not in line:
+            key = "start" if m.group(1).lower().startswith("start") else m.group(1).lower()
+            meta[key] = m.group(2)
+            out.append("")
+        else:
+            out.append(line)
+    return meta, "\n".join(out)
+
+
+def parse_time_text(s: str) -> float:
+    """'09:30', '09:30:15', '9:30 AM', '9:30pm' -> clock seconds. Raises ValueError."""
+    m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\s*", s, re.I)
+    if not m:
+        raise ValueError(f"can't read time '{s}'")
+    h, mi, se = int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)
+    ap = (m.group(4) or "").lower()
+    if ap == "pm" and h < 12:
+        h += 12
+    elif ap == "am" and h == 12:
+        h = 0
+    return h * 3600 + mi * 60 + se
+
+
 def parse_out_time(text: str):
     """'09:51:00' -> (clock seconds, None); '+20' -> (None, 1200) = 20 min after section start."""
     t = text.strip()
