@@ -83,7 +83,8 @@ def generate():
         start = None
     if start is None:
         start = tsd.parse_clock(f.get("start_time") or "09:00:00")
-    tsd.compute(segments, errors, start)
+    if mode != "measure":   # the measure sheet does no calculations (mileages may be blank)
+        tsd.compute(segments, errors, start)
     rows = [r for s in segments for r in s.rows]
 
     for r in rows:   # instruction, then pause, then CAST, then suffix (e.g. FLR)
@@ -116,14 +117,15 @@ def generate():
                 r.num = n
         # Participant legs skip the hidden checkpoint rows, and a leg next to a hidden mileage
         # would give that mileage away.
-        vis = [r for r in seg.rows if not r.is_cp and not r.is_note]
-        for i, r in enumerate(vis):
+        vis = [r for r in seg.rows if not r.is_cp and not r.is_note and r.mileage is not None]
+        for i, r in enumerate(vis if mode != "measure" else []):
             if i > 0:
                 r.leg_vis = max(r.mileage - vis[i - 1].mileage, 0)
                 r.hide_leg = r.hide_mileage or vis[i - 1].hide_mileage
 
     return render_template(
         "output.html", segments=segments, errors=errors, mode=mode,
+        label={"master": "Rally Master Sheet", "measure": "Measure Sheet"}.get(mode, "Route Instructions"),
         title=meta.get("title", f.get("title", "Rally")),
         subtitle=meta.get("subtitle", f.get("subtitle", "")).strip(),
         date_text=pretty_date(meta.get("date", f.get("event_date", ""))),

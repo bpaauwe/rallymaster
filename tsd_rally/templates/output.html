@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>{{ title }} - {{ 'Rally Master' if mode == 'master' else 'Route Instructions' }}</title>
+<html lang="en"><head><meta charset="utf-8"><title>{{ title }} - {{ label }}</title>
 <style>
  body{font-family:system-ui,sans-serif;margin:1.5rem}
  .title-area{border-bottom:3px solid #000;margin-bottom:1rem;padding-bottom:.5rem}
@@ -13,6 +13,7 @@
  tr.out td{background:#d8ecff;font-weight:600}
  tr.cp td{background:#fff3b0;font-weight:600}
  .out{border:2px solid #333;padding:.5rem;margin:1rem 0}
+ body.measure td.n{min-width:1.3in}
  .gap{height:.6em}
  .err{color:#b00020;border:1px solid #b00020;padding:.5rem;margin:1rem 0}
  .noprint button{margin-bottom:1rem}
@@ -32,20 +33,21 @@
   tr.cp td{background:#fff3b0} tr.out td{background:#cfe6ff}
   body.master th{font-size:11pt} body.master th,body.master td{padding:8pt 6pt}
   body.master td{font-size:14pt}
+  body.measure th,body.measure td{padding:14pt 8pt}
   .gap{height:8pt}
   tr{page-break-inside:avoid} thead{display:table-header-group}
  }
-</style></head><body class="{{ mode }}">
+</style></head><body class="{{ 'participant measure' if mode == 'measure' else mode }}">
 {% macro lines(r) %}{% for l in r.lines %}<div{% if not l %} class="gap"{% endif %}>{{ l }}</div>{% endfor %}{% endmacro %}
-{% macro mile(r) %}{% if r.is_note %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
+{% macro mile(r) %}{% if r.is_note or r.mileage is none %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
 
 <div class="noprint"><button onclick="print()">Print</button></div>
 <header class="title-area">
  <h1>{{ title }}</h1>
  {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
- <div class="meta">{% if date_text %}{{ date_text }} &middot; {% endif %}{{ 'Rally Master Sheet' if mode == 'master' else 'Route Instructions' }}</div>
+ <div class="meta">{% if date_text %}{{ date_text }} &middot; {% endif %}{{ label }}</div>
 </header>
-{% if mode == 'master' %}<p>* = mileage is not shown to participants</p>{% endif %}
+{% if mode in ('master', 'measure') %}<p>* = mileage is not shown to participants</p>{% endif %}
 {% if errors %}<div class="err noprint"><b>Problems found:</b><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
 
 {% for seg in segments %}
@@ -60,22 +62,22 @@
 {% endif %}
 {% else %}
 {% set first = seg.rows[0] %}
-{% set shown = seg.rows if mode == 'master' else seg.rows|rejectattr('is_cp')|list %}
+{% set shown = seg.rows if mode in ('master', 'measure') else seg.rows|rejectattr('is_cp')|list %}
 {% if segments|length > 1 %}<h2>Rally</h2>{% endif %}
 {% if first.is_out and mode == 'master' %}
 <p class="out"><b>Out point:</b> {{ first.plain }} &mdash; <b>Out time:</b> {{ clock(seg.base) }} &mdash; <b>First leg speed:</b> {{ '%g' % first.speed }} mph</p>
 {% endif %}
 <table>
 <thead><tr><th class="c">#</th><th>Mileage</th>
- {% if mode == 'master' or show_leg %}<th>Leg</th>{% endif %}
+ {% if mode == 'master' or (mode == 'participant' and show_leg) %}<th>Leg</th>{% endif %}
  <th>Instruction</th>
  {% if mode == 'master' %}<th>Time to instr.</th><th>Elapsed</th><th>Perfect time</th><th>Out time</th><th>CP time</th><th>Notes</th>{% endif %}</tr></thead>
 <tbody>
 {% for r in shown %}
-<tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode == 'master' else '') }}">
+<tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode in ('master', 'measure') else '') }}">
  <td class="c">{{ r.num }}</td>
  <td class="n">{{ mile(r) }}</td>
- {% if mode == 'master' or show_leg %}<td class="n">{{ '' if (r.is_note or (mode == 'participant' and r.hide_leg)) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
+ {% if mode == 'master' or (mode == 'participant' and show_leg) %}<td class="n">{{ '' if (r.is_note or r.mileage is none or (mode == 'participant' and r.hide_leg)) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
  <td>{{ lines(r) }}</td>
  {% if mode == 'master' %}
   <td class="n">{% if not r.is_note %}{{ elapsed(r.leg_sec) }}{% endif %}</td>

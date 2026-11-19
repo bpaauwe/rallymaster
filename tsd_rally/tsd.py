@@ -11,7 +11,7 @@ NEXTMIN = {"NEXTMIN", "NM", "NEXT MINUTE", "NEXT-MINUTE"}
 @dataclass
 class Row:
     line_no: int
-    mileage: float
+    mileage: float | None   # None = left blank (fine for Measure output; timed output needs it)
     instruction: str = ""
     speed: float | None = None
     pause: float = 0.0           # seconds (computed for NEXTMIN)
@@ -110,7 +110,8 @@ def parse_out_time(text: str):
 def _mile(text):
     """'4.20' -> (4.2, False); '@4.20' -> (4.2, True) = mileage for rally master only."""
     t = text.strip()
-    return float(t.lstrip("@")), t.startswith("@")
+    num = t.lstrip("@").strip()
+    return (float(num) if num else None), t.startswith("@")
 
 
 def _finish(row):
@@ -232,6 +233,13 @@ def compute(segments, errors, start=0.0):
             seg.base = ref
         speed, elapsed, prev, last_cp = None, 0.0, None, 0.0
         for r in seg.rows:
+            if r.mileage is None and not r.is_note:   # needed for timed output only
+                errors.append(f"Line {r.line_no}: mileage is required for participant and rally master output")
+                if r.speed is not None:
+                    speed = r.speed
+                r.arrive = r.depart = elapsed
+                r.arrive_clock = r.depart_clock = seg.base + elapsed
+                continue
             if r.is_note:                 # notes have no mileage and take no time
                 r.arrive = r.depart = elapsed
                 r.arrive_clock = r.depart_clock = seg.base + elapsed

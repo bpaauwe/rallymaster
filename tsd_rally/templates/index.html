@@ -40,6 +40,7 @@
   <tr><td>Suffix</td><td>Extra text printed at the end of the instruction, after the pause and CAST &mdash; e.g. <code>FLR</code>. Shown to participants.</td></tr>
   <tr><td>General</td><td>Rally master only &mdash; never printed for participants. Put <code>CP</code> in it to make the line a checkpoint: it is highlighted and labeled CP on the master sheet (with its <b>CP time</b>: the time since the previous checkpoint, or since the start / out time for the first checkpoint after a start or transit zone), gets no instruction number, and is left off the participant sheet entirely (so don't put speeds, pauses or suffixes on it).</td></tr>
   <tr><td>Out time</td><td>A clock time (<code>09:51:00</code>) or <code>+20</code> for 20 minutes after the section starts. The first section counts from the <b>Start time</b> below; later transit zones count from when the car leaves the preceding timed section. For car-specific times, say so in the instruction (e.g. "9:30 + car number + 20 minutes").</td></tr>
+  <tr><td>Blank mileage</td><td>Leave the mileage empty (<code> | Left at Y</code>) while the route is still being measured. The <b>Measure</b> output shows every line &mdash; checkpoints, notes and master-only mileages included &mdash; in the participant layout, with blank mileage cells to write in, and does no calculations. Participant and rally master output need the mileages.</td></tr>
   <tr><td><code>@</code> before a mileage</td><td><code>@4.20</code> shows that mileage on the rally master output only.</td></tr>
   <tr><td><code>**word**</code></td><td>Prints the words between the asterisks in <b>bold</b>. Pause and CAST are bolded automatically.</td></tr>
   <tr><td><code>\n</code> in an instruction</td><td>Starts a new line. Use <code>\n\n</code> for a blank line between paragraphs.</td></tr>
@@ -66,7 +67,8 @@
   <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
   <label>Start time (master times) <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label><br>
   <label><input type="radio" name="mode" value="participant" checked> Participant</label>
-  <label><input type="radio" name="mode" value="master"> Rally master</label><br>
+  <label><input type="radio" name="mode" value="master"> Rally master</label>
+  <label><input type="radio" name="mode" value="measure"> Measure (all lines, no calculations)</label><br>
   <label>Time resolution
    <select name="resolution"><option value="second">Seconds</option><option value="minute">Whole minutes</option></select></label>
   <label><input type="checkbox" name="show_leg"> Show leg distance (participant)</label>
