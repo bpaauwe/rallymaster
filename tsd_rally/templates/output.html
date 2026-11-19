@@ -65,7 +65,7 @@
 {% set shown = seg.rows if mode in ('master', 'measure') else seg.rows|rejectattr('is_cp')|list %}
 {% if segments|length > 1 %}<h2>Rally</h2>{% endif %}
 {% if first.is_out and mode == 'master' %}
-<p class="out"><b>Out point:</b> {{ first.plain }} &mdash; <b>Out time:</b> {{ clock(seg.base) }} &mdash; <b>First leg speed:</b> {{ '%g' % first.speed }} mph</p>
+<p class="out"><b>Out point:</b> {{ first.plain }} &mdash; <b>Out time:</b> {{ clock(seg.base) }}{% if seg.out_note %} ({{ seg.out_note }}){% endif %} &mdash; <b>First leg speed:</b> {{ '%g' % first.speed }} mph</p>
 {% endif %}
 <table>
 <thead><tr><th class="c">#</th><th>Mileage</th>

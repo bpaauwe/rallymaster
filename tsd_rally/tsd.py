@@ -31,8 +31,9 @@ class Row:
     next_min: bool = False       # Richta next-minute out: wait for the next whole minute
     is_note: bool = False        # text-only line: no number, mileage, time, speed, pause or suffix
     is_out: bool = False         # out point that starts a timed leg
-    out_time: float | None = None   # absolute clock seconds, or
-    out_rel: float | None = None    # seconds after the start of the preceding section
+    out_kind: str = ""              # 'tod' | 'assigned' | 'nextmin' | 'fixed' | 'rel'
+    out_time: float | None = None   # clock seconds: the TOD, assigned/arrival reference, or fixed time
+    out_rel: float | None = None    # legacy '+N': seconds after the start of the preceding section
 
 
 @dataclass
@@ -41,6 +42,8 @@ class Segment:
     rows: list = field(default_factory=list)
     has_out: bool = False
     base: float = 0.0            # absolute clock seconds at the start of a timed segment
+    out_note: str = ""           # rally master banner: how the out time was worked out
+    out_arrival: float | None = None
     line_no: int = 0
 
     @property
@@ -100,11 +103,31 @@ def parse_time_text(s: str) -> float:
 
 
 def parse_out_time(text: str):
-    """'09:51:00' -> (clock seconds, None); '+20' -> (None, 1200) = 20 min after section start."""
-    t = text.strip()
-    if t.startswith("+"):
-        return None, float(t[1:]) * 60
-    return parse_clock(t), None
+    """Out time of an OUTPOINT. Returns (kind, clock_seconds, relative_seconds).
+
+      TOD 09:50       time of day plus car number: out time = 09:50 + car number (minutes)
+                      (also written 'TOD + car number 09:50' or '09:50 + car')
+      ASSIGNED [t]    out time is assigned to each car; optional t = clock for the master's times
+      NEXTMIN [t]     Richta next minute out: the next whole minute after arrival; optional t =
+                      the arrival time to assume for the master's times
+      09:51:00        fixed clock time for every car (older form)
+      +20             minutes after the preceding section starts (older form)"""
+    s = text.strip()
+    bad = ValueError(f"can't read out time '{text}' (use TOD 09:50, ASSIGNED or NEXTMIN)")
+    try:
+        if s.startswith("+"):
+            return "rel", None, float(s[1:]) * 60
+        up = s.upper()
+        m = re.match(r"(ASSIGNED|NEXTMIN|NEXT[ -]MINUTE|NM)\b\s*(.*)$", up)
+        if m:
+            kind = "assigned" if m.group(1) == "ASSIGNED" else "nextmin"
+            rest = m.group(2).strip()
+            return kind, (parse_time_text(rest) if rest else None), None
+        rest = re.sub(r"\b(TOD|CAR|NUMBER|NO)\b\.?|[+#]", " ", up).strip()
+        clock = parse_time_text(rest)
+        return ("tod" if re.search(r"\b(TOD|CAR)\b", up) else "fixed"), clock, None
+    except ValueError:
+        raise bad from None
 
 
 def _mile(text):
@@ -175,9 +198,10 @@ def parse_input(text: str):
                 if speed <= 0:
                     raise ValueError("speed must be > 0")
                 mile, hide = _mile(parts[1])
-                t, rel = parse_out_time(parts[3])
+                kind, t, rel = parse_out_time(parts[3])
                 out = _finish(Row(n, mile, parts[2], speed=speed, suffix=parts[5], general=parts[6],
-                                  is_out=True, out_time=t, out_rel=rel, hide_mileage=hide))
+                                  is_out=True, out_kind=kind, out_time=t, out_rel=rel,
+                                  hide_mileage=hide))
                 if cur is not None and cur.kind in UNTIMED:
                     cur.has_out = True
                 cur = Segment("rally", rows=[out], line_no=n)   # an out point always starts a timed leg
@@ -218,17 +242,29 @@ def parse_input(text: str):
     return segments, errors
 
 
-def compute(segments, errors, start=0.0):
+def compute(segments, errors, start=0.0, car=0):
     """Fill in leg and clock times for each timed (rally) segment. Odometer checks and
     transit zones are never calculated; their OUTPOINT sets the next timed segment's clock.
-    `start` is the clock (seconds) that relative out times in the first section count from."""
+    `start` is the clock (seconds) that relative out times in the first section count from;
+    `car` is the car number added to 'TOD + car number' out times."""
     ref = start
     for seg in segments:
         if seg.kind != "rally":
             continue
         first = seg.rows[0]
         if first.is_out:
-            seg.base = first.out_time if first.out_rel is None else ref + first.out_rel
+            k = first.out_kind
+            if k == "tod":                # time of day + car number (minutes)
+                seg.base = first.out_time + car * 60
+            elif k == "assigned":         # assigned per car; master times start at the given clock
+                seg.base = first.out_time if first.out_time is not None else ref
+            elif k == "nextmin":          # next whole minute after arrival
+                seg.out_arrival = first.out_time if first.out_time is not None else ref
+                seg.base = (round(seg.out_arrival) // 60 + 1) * 60
+            elif k == "rel":
+                seg.base = ref + first.out_rel
+            else:
+                seg.base = first.out_time
         else:
             seg.base = ref
         speed, elapsed, prev, last_cp = None, 0.0, None, 0.0
@@ -278,6 +314,13 @@ def fmt_clock(t: float, whole_minutes=False) -> str:
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
     return f"{h:02d}:{m:02d}" if whole_minutes else f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def fmt_tod(sec: float) -> str:
+    """Time of day as typed on a sheet: '9:50' (seconds only if not zero)."""
+    h, rem = divmod(round(sec) % 86400, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}" + (f":{s:02d}" if s else "")
 
 
 def fmt_ms(sec: float, whole_minutes=False) -> str:

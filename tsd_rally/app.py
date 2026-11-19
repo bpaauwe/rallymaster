@@ -36,7 +36,7 @@ SAMPLE = r"""[ODOMETER CHECK]
 1.00 | Mile marker 1
 2.00 | Mile marker 2
 3.00 | Mile marker 3 | | | | End of check
-OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car number + 20 minutes | +20 | 30 | | Car 1 out at 9:51
+OUTPOINT | 0.00 | Out point: Joe's Diner parking lot | TOD 09:50 | 30 | | Out time is TOD plus car number
 
 [RALLY]
 # mileage | instruction | speed | pause | suffix | general
@@ -54,7 +54,7 @@ NOTE | Watch for farm equipment on the road. | Note lines have no number or mile
 12.00 | Obey all traffic laws
 15.00 | Left at light
 NOTE | **No stopping** in the transit zone.
-OUTPOINT | 18.00 | Out point: Fire Station.\nYou have **15 minutes** from the start of the zone | +15 | 35
+OUTPOINT | 18.00 | Out point: Fire Station | ASSIGNED 10:28 | 35
 
 [RALLY]
 18.50 | Right at stop sign | | | FLR
@@ -83,8 +83,12 @@ def generate():
         start = None
     if start is None:
         start = tsd.parse_clock(f.get("start_time") or "09:00:00")
+    try:
+        car = max(int(float(f.get("car") or 0)), 0)
+    except ValueError:
+        car = 0
     if mode != "measure":   # the measure sheet does no calculations (mileages may be blank)
-        tsd.compute(segments, errors, start)
+        tsd.compute(segments, errors, start, car)
     rows = [r for s in segments for r in s.rows]
 
     for r in rows:   # instruction, then pause, then CAST, then suffix (e.g. FLR)
@@ -94,6 +98,12 @@ def generate():
             bits.append("**Next minute out**")
         elif r.pause:
             bits.append("**Pause %g**" % r.pause)
+        if r.is_out and r.out_kind == "tod":
+            bits.append("**Out time %s + car number**" % tsd.fmt_tod(r.out_time))
+        elif r.is_out and r.out_kind == "assigned":
+            bits.append("**Out time assigned**")
+        elif r.is_out and r.out_kind == "nextmin":
+            bits.append("**Next minute out**")
         if r.speed is not None:
             bits.append("**CAST %g**" % r.speed)
         if r.suffix:
@@ -102,6 +112,15 @@ def generate():
         r.plain = rich(" ".join(l for l in tsd.split_lines(r.instruction) if l))
         r.general = rich(r.general)
 
+    for seg in segments:   # rally master banner: how each out time was worked out
+        if seg.kind == "rally" and seg.rows and seg.rows[0].is_out and mode == "master":
+            o = seg.rows[0]
+            if o.out_kind == "tod":
+                seg.out_note = f"TOD {tsd.fmt_tod(o.out_time)} + car number {car}"
+            elif o.out_kind == "assigned":
+                seg.out_note = "assigned to each car; times are shown from this reference"
+            elif o.out_kind == "nextmin":
+                seg.out_note = "next minute after arrival; times assume arrival at " + tsd.fmt_clock(seg.out_arrival, whole_min)
     n = 0
     for seg in segments:
         for r in seg.rows:   # instruction numbers run on through every section; CPs get none
