@@ -18,7 +18,8 @@ class Row:
     suffix: str = ""             # participant-visible text appended after pause and CAST (e.g. FLR)
     general: str = ""            # rally master notes / checkpoint flag (never on participant output)
     leg_dist: float = 0.0
-    leg_sec: float = 0.0
+    leg_sec: float = 0.0         # time from the previous instruction to this one
+    cp_sec: float | None = None  # checkpoints only: time since the previous CP (or the segment start)
     arrive: float = 0.0          # elapsed seconds since segment start, at arrival
     depart: float = 0.0          # elapsed seconds after any pause
     arrive_clock: float = 0.0    # absolute clock seconds
@@ -189,7 +190,7 @@ def compute(segments, errors, start=0.0):
             seg.base = first.out_time if first.out_rel is None else ref + first.out_rel
         else:
             seg.base = ref
-        speed, elapsed, prev = None, 0.0, None
+        speed, elapsed, prev, last_cp = None, 0.0, None, 0.0
         for r in seg.rows:
             if prev is not None:
                 if r.mileage < prev:
@@ -200,6 +201,9 @@ def compute(segments, errors, start=0.0):
             elapsed += r.leg_sec
             r.arrive = elapsed
             r.arrive_clock = seg.base + elapsed
+            if r.is_cp:                   # time for this checkpoint: from the previous CP, or from
+                r.cp_sec = elapsed - last_cp   # the start / out time if it is the first in the segment
+                last_cp = elapsed
             if r.speed is not None:
                 speed = r.speed
             elif speed is None:
@@ -222,6 +226,14 @@ def fmt_clock(t: float, whole_minutes=False) -> str:
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
     return f"{h:02d}:{m:02d}" if whole_minutes else f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def fmt_ms(sec: float, whole_minutes=False) -> str:
+    """Duration for checkpoint legs: '20:00' (min:sec) or '20 min'."""
+    if whole_minutes:
+        return f"{round(sec / 60)} min"
+    m, s = divmod(round(sec), 60)
+    return f"{m}:{s:02d}"
 
 
 def fmt_elapsed(sec: float) -> str:

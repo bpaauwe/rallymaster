@@ -54,6 +54,7 @@ OUTPOINT | 18.00 | Out point: Fire Station.\nYou have **15 minutes** from the st
 
 [RALLY]
 18.50 | Right at stop sign | | | FLR
+22.00 | Checkpoint 2 | | | | CP 2 - hidden
 25.00 | FINISH | | | | Finish
 """
 
@@ -113,6 +114,7 @@ def generate():
         date_text=pretty_date(f.get("event_date", "")),
         show_leg=bool(f.get("show_leg")),
         clock=lambda t: tsd.fmt_clock(t, whole_min), elapsed=tsd.fmt_elapsed,
+        cptime=lambda s: tsd.fmt_ms(s, whole_min),
     )
 
 

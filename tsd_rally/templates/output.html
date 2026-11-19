@@ -69,7 +69,7 @@
 <thead><tr><th class="c">#</th><th>Mileage</th>
  {% if mode == 'master' or show_leg %}<th>Leg</th>{% endif %}
  <th>Instruction</th>
- {% if mode == 'master' %}<th>Leg time</th><th>Elapsed</th><th>Perfect time</th><th>Out time</th><th>Notes</th>{% endif %}</tr></thead>
+ {% if mode == 'master' %}<th>Time to instr.</th><th>Elapsed</th><th>Perfect time</th><th>Out time</th><th>CP time</th><th>Notes</th>{% endif %}</tr></thead>
 <tbody>
 {% for r in shown %}
 <tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode == 'master' else '') }}">
@@ -82,6 +82,7 @@
   <td class="n">{{ elapsed(r.arrive) }}</td>
   <td class="n">{{ clock(r.arrive_clock) }}{% if r.is_cp %} (CP){% endif %}</td>
   <td class="n">{% if r.depart != r.arrive %}{{ clock(r.depart_clock) }}{% endif %}</td>
+  <td class="n">{% if r.is_cp %}{{ cptime(r.cp_sec) }}{% endif %}</td>
   <td>{{ r.general }}</td>
  {% endif %}
 </tr>
