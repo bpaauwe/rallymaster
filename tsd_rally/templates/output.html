@@ -9,6 +9,7 @@
  table{border-collapse:collapse;width:100%}
  th,td{border:1px solid #888;padding:4px 8px;text-align:left;font-size:14px;vertical-align:top}
  th{background:#eee} td.n{text-align:right;font-variant-numeric:tabular-nums}
+ .c{text-align:center}
  tr.out td{background:#d8ecff;font-weight:600}
  tr.cp td{background:#fff3b0;font-weight:600}
  .out{border:2px solid #333;padding:.5rem;margin:1rem 0}
@@ -25,8 +26,8 @@
   table{border-collapse:collapse}
   th,td{font-size:16pt;line-height:1.25;padding:10pt 8pt;border:1.5pt solid #000}
   th{font-size:12pt;background:#ddd}
-  td.n{white-space:nowrap}
-  body.participant td.n{font-weight:bold}
+  td.n,td.c{white-space:nowrap}
+  body.participant td.n,body.participant td.c{font-weight:bold}
   tbody tr:nth-child(even) td{background:#f0f0f0}
   tr.cp td{background:#fff3b0} tr.out td{background:#cfe6ff}
   body.master th{font-size:11pt} body.master th,body.master td{padding:8pt 6pt}
@@ -52,28 +53,29 @@
 <h2>{{ seg.title }}{% if mode == 'master' %} (not timed){% endif %}</h2>
 {% if seg.rows %}
 <table>
-<thead><tr><th>#</th><th>Mileage</th><th>Instruction</th>{% if mode == 'master' %}<th>Notes</th>{% endif %}</tr></thead>
+<thead><tr><th class="c">#</th><th>Mileage</th><th>Instruction</th>{% if mode == 'master' %}<th>Notes</th>{% endif %}</tr></thead>
 <tbody>
-{% for r in seg.rows %}<tr><td class="n">{{ loop.index }}</td><td class="n">{{ mile(r) }}</td><td>{{ lines(r) }}</td>{% if mode == 'master' %}<td>{{ r.general }}</td>{% endif %}</tr>
+{% for r in seg.rows %}<tr><td class="c">{{ r.num }}</td><td class="n">{{ mile(r) }}</td><td>{{ lines(r) }}</td>{% if mode == 'master' %}<td>{{ r.general }}</td>{% endif %}</tr>
 {% endfor %}</tbody></table>
 {% endif %}
 {% else %}
 {% set first = seg.rows[0] %}
+{% set shown = seg.rows if mode == 'master' else seg.rows|rejectattr('is_cp')|list %}
 {% if segments|length > 1 %}<h2>Rally</h2>{% endif %}
 {% if first.is_out and mode == 'master' %}
 <p class="out"><b>Out point:</b> {{ first.plain }} &mdash; <b>Out time:</b> {{ clock(seg.base) }} &mdash; <b>First leg speed:</b> {{ '%g' % first.speed }} mph</p>
 {% endif %}
 <table>
-<thead><tr><th>#</th><th>Mileage</th>
+<thead><tr><th class="c">#</th><th>Mileage</th>
  {% if mode == 'master' or show_leg %}<th>Leg</th>{% endif %}
  <th>Instruction</th>
  {% if mode == 'master' %}<th>Leg time</th><th>Elapsed</th><th>Perfect time</th><th>Out time</th><th>Notes</th>{% endif %}</tr></thead>
 <tbody>
-{% for r in seg.rows %}
+{% for r in shown %}
 <tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode == 'master' else '') }}">
- <td class="n">{{ 'OUT' if r.is_out else loop.index }}</td>
+ <td class="c">{{ r.num }}</td>
  <td class="n">{{ mile(r) }}</td>
- {% if mode == 'master' or show_leg %}<td class="n">{{ '' if (mode == 'participant' and r.hide_leg) else '%.2f' % r.leg_dist }}</td>{% endif %}
+ {% if mode == 'master' or show_leg %}<td class="n">{{ '' if (mode == 'participant' and r.hide_leg) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
  <td>{{ lines(r) }}</td>
  {% if mode == 'master' %}
   <td class="n">{{ elapsed(r.leg_sec) }}</td>

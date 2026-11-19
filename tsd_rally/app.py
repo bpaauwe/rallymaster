@@ -29,22 +29,23 @@ def pretty_date(s):
 
 
 SAMPLE = r"""[ODOMETER CHECK]
-# mileage | instruction | | | general | suffix
+# mileage | instruction | | | suffix | general
 0.00 | Start of odometer check at mile marker 0
 1.00 | Mile marker 1
 2.00 | Mile marker 2
-3.00 | Mile marker 3 | | | End of check
-OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car number + 20 minutes | +20 | 30 | Car 1 out at 9:51
+3.00 | Mile marker 3 | | | | End of check
+OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car number + 20 minutes | +20 | 30 | | Car 1 out at 9:51
 
 [RALLY]
-# mileage | instruction | speed | pause | general | suffix
-1.20 | **Left** at stop sign onto **Oak Rd** | | | | FLR
-3.45 | Right at T onto County Rd 5 | 35 | |
+# mileage | instruction | speed | pause | suffix | general
+1.20 | **Left** at stop sign onto **Oak Rd** | | | FLR
+3.45 | Right at T onto County Rd 5 | 35
 @4.20 | Bear left at fork (mileage hidden from participants)
-5.10 | Pass red barn on right | | | @Secret check: barn number
-7.80 | Left at Y | 25 | NEXTMIN | CP 1 - hidden
-9.50 | Straight at 4-way.\nSpeed zone ahead - watch for signs | 40 | |
-12.00 | Enter **transit zone**. No timing. | | | End of timed section
+5.10 | Pass red barn on right | | | | Secret check: barn number
+7.80 | Left at Y | 25 | NEXTMIN
+8.40 | Checkpoint 1 | | | | CP 1 - hidden
+9.50 | Straight at 4-way.\nSpeed zone ahead - watch for signs | 40
+12.00 | Enter **transit zone**. No timing. | | | | End of timed section
 
 [TRANSIT]
 12.00 | Obey all traffic laws
@@ -52,8 +53,8 @@ OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car nu
 OUTPOINT | 18.00 | Out point: Fire Station.\nYou have **15 minutes** from the start of the zone | +15 | 35
 
 [RALLY]
-18.50 | Right at stop sign | | | | FLR
-25.00 | FINISH | | | Finish
+18.50 | Right at stop sign | | | FLR
+25.00 | FINISH | | | | Finish
 """
 
 
@@ -87,9 +88,24 @@ def generate():
         r.plain = rich(" ".join(l for l in tsd.split_lines(r.instruction) if l))
         r.general = rich(r.general)
 
-    for seg in segments:   # a leg distance next to a hidden mileage would give it away
-        for i, r in enumerate(seg.rows):
-            r.hide_leg = r.hide_mileage or (i > 0 and seg.rows[i - 1].hide_mileage)
+    n = 0
+    for seg in segments:
+        for r in seg.rows:   # instruction numbers run on through every section; CPs get none
+            r.leg_vis, r.hide_leg = r.leg_dist, r.hide_mileage
+            if r.is_out:
+                r.num = "OUT"
+            elif r.is_cp:
+                r.num = "CP"
+            else:
+                n += 1
+                r.num = n
+        # Participant legs skip the hidden checkpoint rows, and a leg next to a hidden mileage
+        # would give that mileage away.
+        vis = [r for r in seg.rows if not r.is_cp]
+        for i, r in enumerate(vis):
+            if i > 0:
+                r.leg_vis = max(r.mileage - vis[i - 1].mileage, 0)
+                r.hide_leg = r.hide_mileage or vis[i - 1].hide_mileage
 
     return render_template(
         "output.html", segments=segments, errors=errors, mode=mode,

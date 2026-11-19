@@ -15,8 +15,8 @@ class Row:
     instruction: str = ""
     speed: float | None = None
     pause: float = 0.0           # seconds (computed for NEXTMIN)
-    general: str = ""            # rally master notes / checkpoint flag (never on participant output)
     suffix: str = ""             # participant-visible text appended after pause and CAST (e.g. FLR)
+    general: str = ""            # rally master notes / checkpoint flag (never on participant output)
     leg_dist: float = 0.0
     leg_sec: float = 0.0
     arrive: float = 0.0          # elapsed seconds since segment start, at arrival
@@ -92,8 +92,8 @@ def parse_input(text: str):
     """Returns (segments, errors).
 
     Sections: [ODOMETER CHECK], [TRANSIT], [RALLY]  (lines before any header are rally lines)
-    Line:      mileage | instruction | speed | pause | general | suffix
-    Out point: OUTPOINT | mileage | instruction | out time | speed | general | suffix
+    Line:      mileage | instruction | speed | pause | suffix | general
+    Out point: OUTPOINT | mileage | instruction | out time | speed | suffix | general
                out time = clock time (09:51:00) or +minutes after the section starts (+20)
     A leading @ on a mileage shows it on the rally master output only.
     Blank lines and lines starting with # are skipped."""
@@ -134,7 +134,7 @@ def parse_input(text: str):
                     raise ValueError("speed must be > 0")
                 mile, hide = _mile(parts[1])
                 t, rel = parse_out_time(parts[3])
-                out = _finish(Row(n, mile, parts[2], speed=speed, general=parts[5], suffix=parts[6],
+                out = _finish(Row(n, mile, parts[2], speed=speed, suffix=parts[5], general=parts[6],
                                   is_out=True, out_time=t, out_rel=rel, hide_mileage=hide))
                 if cur is not None and cur.kind in UNTIMED:
                     cur.has_out = True
@@ -145,7 +145,7 @@ def parse_input(text: str):
             if cur is None:
                 begin("rally", n)
             mile, hide = _mile(parts[0])
-            row = Row(n, mile, parts[1], general=parts[4], suffix=parts[5], hide_mileage=hide)
+            row = Row(n, mile, parts[1], suffix=parts[4], general=parts[5], hide_mileage=hide)
             if cur.kind in UNTIMED:
                 if parts[2] or parts[3]:
                     errors.append(f"Line {n}: speed/pause ignored in {cur.title.lower()}")
@@ -162,7 +162,11 @@ def parse_input(text: str):
             row.speed = float(parts[2]) if parts[2] else None
             if row.speed is not None and row.speed <= 0:
                 raise ValueError("speed must be > 0")
-            cur.rows.append(_finish(row))
+            _finish(row)
+            if row.is_cp and (row.speed is not None or row.pause or row.next_min or row.suffix):
+                errors.append(f"Line {n}: checkpoint lines are hidden from participants, so its "
+                              f"speed/pause/suffix will not be printed for them")
+            cur.rows.append(row)
         except ValueError as e:
             errors.append(f"Line {n}: {e} -> '{raw}'")
     for seg in segments:
