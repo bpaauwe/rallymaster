@@ -29,6 +29,7 @@ class Row:
     hide_mileage: bool = False   # mileage shown on rally master output only
     hide_leg: bool = False
     next_min: bool = False       # Richta next-minute out: wait for the next whole minute
+    is_note: bool = False        # text-only line: no number, mileage, time, speed, pause or suffix
     is_out: bool = False         # out point that starts a timed leg
     out_time: float | None = None   # absolute clock seconds, or
     out_rel: float | None = None    # seconds after the start of the preceding section
@@ -126,6 +127,7 @@ def parse_input(text: str):
 
     Sections: [ODOMETER CHECK], [TRANSIT], [RALLY]  (lines before any header are rally lines)
     Line:      mileage | instruction | speed | pause | suffix | general
+    Note:      NOTE | text | general   (text in the instruction column only)
     Out point: OUTPOINT | mileage | instruction | out time | speed | suffix | general
                out time = clock time (09:51:00) or +minutes after the section starts (+20)
     A leading @ on a mileage shows it on the rally master output only.
@@ -158,6 +160,12 @@ def parse_input(text: str):
             continue
         parts = [p.strip() for p in line.split("|")]
         try:
+            if parts[0].upper() == "NOTE":
+                parts += [""] * (3 - len(parts))
+                if cur is None:
+                    begin("rally", n)
+                cur.rows.append(Row(n, 0.0, parts[1], general=parts[2], is_note=True))
+                continue
             if parts[0].upper() == "OUTPOINT":
                 parts += [""] * (7 - len(parts))
                 if not parts[3] or not parts[4]:
@@ -224,6 +232,10 @@ def compute(segments, errors, start=0.0):
             seg.base = ref
         speed, elapsed, prev, last_cp = None, 0.0, None, 0.0
         for r in seg.rows:
+            if r.is_note:                 # notes have no mileage and take no time
+                r.arrive = r.depart = elapsed
+                r.arrive_clock = r.depart_clock = seg.base + elapsed
+                continue
             if prev is not None:
                 if r.mileage < prev:
                     errors.append(f"Line {r.line_no}: mileage {r.mileage} is less than previous {prev}")

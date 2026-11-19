@@ -28,6 +28,7 @@
   <tr><td>Rally instruction</td><td><code>mileage | instruction | speed | pause | suffix | general</code></td></tr>
   <tr><td>Odometer check or transit zone instruction</td><td><code>mileage | instruction | | | suffix | general</code> &nbsp;(no speed or pause; not timed; no checkpoints)</td></tr>
   <tr><td>Out point (ends an odometer check or transit zone and starts a timed leg)</td><td><code>OUTPOINT | mileage | instruction | out time | speed | suffix | general</code></td></tr>
+  <tr><td>Note</td><td><code>NOTE | text | general</code> &mdash; text in the instruction column only: no number, mileage, speed, pause or suffix, and no time calculation. Works in any section; <code>general</code> is an optional rally master note.</td></tr>
   <tr><td>File header (optional)</td><td><code>Title: ...</code> &nbsp; <code>Subtitle: ...</code> &nbsp; <code>Date: 2026-11-21</code> &nbsp; <code>Start time: 09:30:00</code> &mdash; one per line, usually at the top. When a file is loaded or pasted they fill in the form fields below and are removed from the text. <b>Save as text file</b> writes them back in.</td></tr>
   <tr><td>Section headers</td><td><code>[ODOMETER CHECK]</code> &nbsp; <code>[TRANSIT]</code> &nbsp; <code>[RALLY]</code> &mdash; use as many sections as you need, in order (lines with no header are rally lines)</td></tr>
   <tr><td>Comment</td><td>a line starting with <code>#</code> is ignored</td></tr>
@@ -47,7 +48,7 @@
  <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks; rows like <code>Title,My Rally</code> or <code>Date,2026-11-21</code> set the title area).
  Use <b>Save as text file</b> or <b>Save as CSV</b> (opens in Excel or Google Sheets; reload it later with Load file) to keep your route.</p>
 
- <p>Instruction numbers run on continuously through the odometer check, rally sections and transit zones.</p>
+ <p>Instruction numbers (not given to notes or checkpoints) run on continuously through the odometer check, rally sections and transit zones.</p>
 </details>
 
 <form method="post" action="/generate" target="_blank">

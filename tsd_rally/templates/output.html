@@ -37,7 +37,7 @@
  }
 </style></head><body class="{{ mode }}">
 {% macro lines(r) %}{% for l in r.lines %}<div{% if not l %} class="gap"{% endif %}>{{ l }}</div>{% endfor %}{% endmacro %}
-{% macro mile(r) %}{% if r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
+{% macro mile(r) %}{% if r.is_note %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
 
 <div class="noprint"><button onclick="print()">Print</button></div>
 <header class="title-area">
@@ -75,13 +75,13 @@
 <tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode == 'master' else '') }}">
  <td class="c">{{ r.num }}</td>
  <td class="n">{{ mile(r) }}</td>
- {% if mode == 'master' or show_leg %}<td class="n">{{ '' if (mode == 'participant' and r.hide_leg) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
+ {% if mode == 'master' or show_leg %}<td class="n">{{ '' if (r.is_note or (mode == 'participant' and r.hide_leg)) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
  <td>{{ lines(r) }}</td>
  {% if mode == 'master' %}
-  <td class="n">{{ elapsed(r.leg_sec) }}</td>
-  <td class="n">{{ elapsed(r.arrive) }}</td>
-  <td class="n">{{ clock(r.arrive_clock) }}{% if r.is_cp %} (CP){% endif %}</td>
-  <td class="n">{% if r.depart != r.arrive %}{{ clock(r.depart_clock) }}{% endif %}</td>
+  <td class="n">{% if not r.is_note %}{{ elapsed(r.leg_sec) }}{% endif %}</td>
+  <td class="n">{% if not r.is_note %}{{ elapsed(r.arrive) }}{% endif %}</td>
+  <td class="n">{% if not r.is_note %}{{ clock(r.arrive_clock) }}{% if r.is_cp %} (CP){% endif %}{% endif %}</td>
+  <td class="n">{% if not r.is_note and r.depart != r.arrive %}{{ clock(r.depart_clock) }}{% endif %}</td>
   <td class="n">{% if r.is_cp %}{{ cptime(r.cp_sec) }}{% endif %}</td>
   <td>{{ r.general }}</td>
  {% endif %}

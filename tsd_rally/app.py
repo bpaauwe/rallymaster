@@ -43,6 +43,7 @@ OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car nu
 1.20 | **Left** at stop sign onto **Oak Rd** | | | FLR
 3.45 | Right at T onto County Rd 5 | 35
 @4.20 | Bear left at fork (mileage hidden from participants)
+NOTE | Watch for farm equipment on the road. | Note lines have no number or mileage
 5.10 | Pass red barn on right | | | | Secret check: barn number
 7.80 | Left at Y | 25 | NEXTMIN
 8.40 | Checkpoint 1 | | | | CP 1 - hidden
@@ -52,6 +53,7 @@ OUTPOINT | 0.00 | Out point: Joe's Diner parking lot.\nOut time is 9:30 + car nu
 [TRANSIT]
 12.00 | Obey all traffic laws
 15.00 | Left at light
+NOTE | **No stopping** in the transit zone.
 OUTPOINT | 18.00 | Out point: Fire Station.\nYou have **15 minutes** from the start of the zone | +15 | 35
 
 [RALLY]
@@ -103,7 +105,9 @@ def generate():
     for seg in segments:
         for r in seg.rows:   # instruction numbers run on through every section; CPs get none
             r.leg_vis, r.hide_leg = r.leg_dist, r.hide_mileage
-            if r.is_out:
+            if r.is_note:
+                r.num = ""
+            elif r.is_out:
                 r.num = "OUT"
             elif r.is_cp:
                 r.num = "CP"
@@ -112,7 +116,7 @@ def generate():
                 r.num = n
         # Participant legs skip the hidden checkpoint rows, and a leg next to a hidden mileage
         # would give that mileage away.
-        vis = [r for r in seg.rows if not r.is_cp]
+        vis = [r for r in seg.rows if not r.is_cp and not r.is_note]
         for i, r in enumerate(vis):
             if i > 0:
                 r.leg_vis = max(r.mileage - vis[i - 1].mileage, 0)
