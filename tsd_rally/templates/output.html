@@ -35,6 +35,11 @@
   body.master td{font-size:14pt}
   body.measure th,body.measure td{padding:14pt 8pt}
   .gap{height:8pt}
+  /* keep headings with what follows them: never leave a section heading (or the out point box)
+     stranded at the bottom of a page */
+  h1,h2,.title-area,p.out{break-after:avoid;page-break-after:avoid}
+  h2+table,p.out+table{break-before:avoid;page-break-before:avoid}
+  tbody tr:first-child{break-after:avoid;page-break-after:avoid}
   tr{page-break-inside:avoid} thead{display:table-header-group}
  }
 </style></head><body class="{{ 'participant measure' if mode == 'measure' else mode }}">
