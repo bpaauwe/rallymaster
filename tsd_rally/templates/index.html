@@ -46,7 +46,7 @@
    Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time below). A plain clock time (<code>09:51:00</code>) or <code>+20</code> (minutes after the section starts) also still work.</td></tr>
   <tr><td>Blank mileage</td><td>Leave the mileage empty (<code> | Left at Y</code>) while the route is still being measured. The <b>Measure</b> output shows every line &mdash; checkpoints, notes and master-only mileages included &mdash; in the participant layout, with blank mileage cells to write in, and does no calculations. Participant and rally master output need the mileages.</td></tr>
   <tr><td><code>@</code> before a mileage</td><td><code>@4.20</code> shows that mileage on the rally master output only.</td></tr>
-  <tr><td><code>**word**</code></td><td>Prints the words between the asterisks in <b>bold</b>. Pause and CAST are bolded automatically.</td></tr>
+  <tr><td><code>**word**</code> &nbsp; <code>*word*</code> &nbsp; <code>***word***</code></td><td>Prints the words in <b>bold</b>, <i>italic</i>, or <b><i>bold italic</i></b>. Pause and CAST are bolded automatically.</td></tr>
   <tr><td><code>\n</code> in an instruction</td><td>Starts a new line. Use <code>\n\n</code> for a blank line between paragraphs.</td></tr>
  </table>
  <p>Files: load a <code>.txt</code> file in this format, or a <code>.csv</code> with the columns
@@ -54,6 +54,8 @@
  Use <b>Save as text file</b> or <b>Save as CSV</b> (opens in Excel or Google Sheets; reload it later with Load file) to keep your route.</p>
 
  <p>Instruction numbers (not given to notes or checkpoints) run on continuously through the odometer check, rally sections and transit zones.</p>
+
+ <p><b>Spreadsheet backup:</b> <b>Download spreadsheet (CSV with formulas)</b> saves every line plus formulas for the instruction text, perfect times, out times and checkpoint times. Open it in Excel or Google Sheets and change a mileage, speed or pause (or the start time or car number at the top) and everything recalculates. Times that are typed in the sheet (start time, out clocks) should stay in hh:mm:ss form.</p>
 </details>
 
 <form method="post" action="/generate" target="_blank">
@@ -79,6 +81,7 @@
   <label><input type="checkbox" name="show_leg"> Show leg distance (participant)</label>
  </fieldset>
  <button class="go">Generate printable output</button>
+ <button class="go" formaction="/export" formtarget="_self" title="A backup you can open in Excel or Google Sheets: every input plus formulas for all calculated values">Download spreadsheet (CSV with formulas)</button>
 </form>
 
 <script>

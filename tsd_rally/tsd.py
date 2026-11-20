@@ -1,6 +1,12 @@
 """TSD rally calculations. Distances in miles, speeds in mph, pauses in seconds."""
+import math
 import re
 from dataclasses import dataclass, field
+
+def _r(x):
+    """Round half up, like Excel's ROUND (Python's round() rounds halves to even)."""
+    return int(math.floor(x + 0.5))
+
 
 CP_RE = re.compile(r"\b(cp|checkpoint|check point)\b", re.I)
 UNTIMED = ("odo", "transit")                      # sections with no speeds, timing or checkpoints
@@ -260,7 +266,7 @@ def compute(segments, errors, start=0.0, car=0):
                 seg.base = first.out_time if first.out_time is not None else ref
             elif k == "nextmin":          # next whole minute after arrival
                 seg.out_arrival = first.out_time if first.out_time is not None else ref
-                seg.base = (round(seg.out_arrival) // 60 + 1) * 60
+                seg.base = (_r(seg.out_arrival) // 60 + 1) * 60
             elif k == "rel":
                 seg.base = ref + first.out_rel
             else:
@@ -297,7 +303,7 @@ def compute(segments, errors, start=0.0, car=0):
             elif speed is None:
                 errors.append(f"Line {r.line_no}: no speed set yet")
             if r.next_min:                # Richta next-minute out: next whole minute after arrival
-                arr = round(r.arrive_clock)
+                arr = _r(r.arrive_clock)
                 r.pause = ((arr // 60) + 1) * 60 - r.arrive_clock
             elapsed += r.pause
             r.depart = elapsed
@@ -308,9 +314,9 @@ def compute(segments, errors, start=0.0, car=0):
 
 
 def fmt_clock(t: float, whole_minutes=False) -> str:
-    t = round(t) % 86400
+    t = _r(t) % 86400
     if whole_minutes:
-        t = round(t / 60) * 60 % 86400
+        t = _r(t / 60) * 60 % 86400
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
     return f"{h:02d}:{m:02d}" if whole_minutes else f"{h:02d}:{m:02d}:{s:02d}"
@@ -318,7 +324,7 @@ def fmt_clock(t: float, whole_minutes=False) -> str:
 
 def fmt_tod(sec: float) -> str:
     """Time of day as typed on a sheet: '9:50' (seconds only if not zero)."""
-    h, rem = divmod(round(sec) % 86400, 3600)
+    h, rem = divmod(_r(sec) % 86400, 3600)
     m, s = divmod(rem, 60)
     return f"{h}:{m:02d}" + (f":{s:02d}" if s else "")
 
@@ -326,13 +332,13 @@ def fmt_tod(sec: float) -> str:
 def fmt_ms(sec: float, whole_minutes=False) -> str:
     """Duration for checkpoint legs: '20:00' (min:sec) or '20 min'."""
     if whole_minutes:
-        return f"{round(sec / 60)} min"
-    m, s = divmod(round(sec), 60)
+        return f"{_r(sec / 60)} min"
+    m, s = divmod(_r(sec), 60)
     return f"{m}:{s:02d}"
 
 
 def fmt_elapsed(sec: float) -> str:
-    t = round(sec)
+    t = _r(sec)
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
     return f"{h}:{m:02d}:{s:02d}"
