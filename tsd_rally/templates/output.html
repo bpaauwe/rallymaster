@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{{ title }} - {{ label }}</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:1.5rem}
+ .title-area{border-bottom:3px solid #000;margin-bottom:1rem;padding-bottom:.5rem}
+ .title-area h1{margin:0}
+ .subtitle{font-size:1.3rem;margin-top:.25rem}
+ .meta{margin-top:.35rem;font-size:1.05rem}
+ table{border-collapse:collapse;width:100%}
+ th,td{border:1px solid #888;padding:4px 8px;text-align:left;font-size:14px;vertical-align:top}
+ th{background:#eee} td.n{text-align:right;font-variant-numeric:tabular-nums}
+ .c{text-align:center}
+ tr.out td{background:#d8ecff;font-weight:600}
+ tr.cp td{background:#fff3b0;font-weight:600}
+ .out{border:2px solid #333;padding:.5rem;margin:1rem 0}
+ body.measure td.n{min-width:1.3in}
+ .gap{height:.6em}
+ .err{color:#b00020;border:1px solid #b00020;padding:.5rem;margin:1rem 0}
+ .noprint button{margin-bottom:1rem}
+ @page{margin:.5in}
+ @media print{
+  .noprint{display:none}
+  body{margin:0;color:#000;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1{font-size:26pt} .subtitle{font-size:18pt} .meta{font-size:14pt}
+  h2{font-size:18pt;margin:14pt 0 6pt}
+  .out{font-size:16pt;border-width:3pt;padding:8pt}
+  table{border-collapse:collapse}
+  th,td{font-size:16pt;line-height:1.25;padding:10pt 8pt;border:1.5pt solid #000}
+  th{font-size:12pt;background:#ddd}
+  td.n,td.c{white-space:nowrap}
+  body.participant td.n,body.participant td.c{font-weight:bold}
+  tbody tr:nth-child(even) td{background:#f0f0f0}
+  tr.cp td{background:#fff3b0} tr.out td{background:#cfe6ff}
+  body.master th{font-size:11pt} body.master th,body.master td{padding:8pt 6pt}
+  body.master td{font-size:14pt}
+  body.measure th,body.measure td{padding:14pt 8pt}
+  .gap{height:8pt}
+  /* keep headings with what follows them: never leave a section heading (or the out point box)
+     stranded at the bottom of a page */
+  h1,h2,.title-area,p.out{break-after:avoid;page-break-after:avoid}
+  h2+table,p.out+table{break-before:avoid;page-break-before:avoid}
+  tbody tr:first-child{break-after:avoid;page-break-after:avoid}
+  tr{page-break-inside:avoid} thead{display:table-header-group}
+ }
+</style></head><body class="{{ 'participant measure' if mode == 'measure' else mode }}">
+{% macro lines(r) %}{% for l in r.lines %}<div{% if not l %} class="gap"{% endif %}>{{ l }}</div>{% endfor %}{% endmacro %}
+{% macro mile(r) %}{% if r.is_note or r.mileage is none %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
+
+<div class="noprint"><button onclick="print()">Print</button></div>
+<header class="title-area">
+ <h1>{{ title }}</h1>
+ {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
+ <div class="meta">{% if date_text %}{{ date_text }} &middot; {% endif %}{{ label }}</div>
+</header>
+{% if mode in ('master', 'measure') %}<p>* = mileage is not shown to participants</p>{% endif %}
+{% if errors %}<div class="err noprint"><b>Problems found:</b><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+{% for seg in segments %}
+{% if seg.kind != 'rally' %}
+<h2>{{ seg.title }}{% if mode == 'master' %} (not timed){% endif %}</h2>
+{% if seg.rows %}
+<table>
+<thead><tr><th class="c">#</th><th>Mileage</th><th>Instruction</th>{% if mode == 'master' %}<th>Notes</th>{% endif %}</tr></thead>
+<tbody>
+{% for r in seg.rows %}<tr><td class="c">{{ r.num }}</td><td class="n">{{ mile(r) }}</td><td>{{ lines(r) }}</td>{% if mode == 'master' %}<td>{{ r.general }}</td>{% endif %}</tr>
+{% endfor %}</tbody></table>
+{% endif %}
+{% else %}
+{% set first = seg.rows[0] %}
+{% set shown = seg.rows if mode in ('master', 'measure') else seg.rows|rejectattr('is_cp')|list %}
+{% if segments|length > 1 %}<h2>Rally</h2>{% endif %}
+{% if first.is_out and mode == 'master' %}
+<p class="out"><b>Out point:</b> {{ first.plain }} &mdash; <b>Out time:</b> {{ clock(seg.base) }}{% if seg.out_note %} ({{ seg.out_note }}){% endif %} &mdash; <b>First leg speed:</b> {{ '%g' % first.speed }} mph</p>
+{% endif %}
+<table>
+<thead><tr><th class="c">#</th><th>Mileage</th>
+ {% if mode == 'master' or (mode == 'participant' and show_leg) %}<th>Leg</th>{% endif %}
+ <th>Instruction</th>
+ {% if mode == 'master' %}<th>Time to instr.</th><th>Elapsed</th><th>Perfect time</th><th>Out time</th><th>CP time</th><th>Notes</th>{% endif %}</tr></thead>
+<tbody>
+{% for r in shown %}
+<tr class="{{ 'out' if r.is_out else ('cp' if r.is_cp and mode in ('master', 'measure') else '') }}">
+ <td class="c">{{ r.num }}</td>
+ <td class="n">{{ mile(r) }}</td>
+ {% if mode == 'master' or (mode == 'participant' and show_leg) %}<td class="n">{{ '' if (r.is_note or r.mileage is none or (mode == 'participant' and r.hide_leg)) else '%.2f' % (r.leg_dist if mode == 'master' else r.leg_vis) }}</td>{% endif %}
+ <td>{{ lines(r) }}</td>
+ {% if mode == 'master' %}
+  <td class="n">{% if not r.is_note %}{{ elapsed(r.leg_sec) }}{% endif %}</td>
+  <td class="n">{% if not r.is_note %}{{ elapsed(r.arrive) }}{% endif %}</td>
+  <td class="n">{% if not r.is_note %}{{ clock(r.arrive_clock) }}{% if r.is_cp %} (CP){% endif %}{% endif %}</td>
+  <td class="n">{% if not r.is_note and r.depart != r.arrive %}{{ clock(r.depart_clock) }}{% endif %}</td>
+  <td class="n">{% if r.is_cp %}{{ cptime(r.cp_sec) }}{% endif %}</td>
+  <td>{{ r.general }}</td>
+ {% endif %}
+</tr>
+{% endfor %}
+</tbody></table>
+{% endif %}
+{% endfor %}
+</body></html>

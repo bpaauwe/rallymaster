@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>TSD Rally Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+ :root{color-scheme:light dark}
+ body{font-family:system-ui,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;line-height:1.4}
+ h1{margin-bottom:.2rem} .sub{margin-top:0;opacity:.75}
+ details{border:1px solid #8886;border-radius:6px;padding:.4rem .9rem;margin:1rem 0}
+ summary{cursor:pointer;font-weight:600}
+ table.ref{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:14px}
+ table.ref th,table.ref td{border:1px solid #8886;padding:4px 8px;text-align:left;vertical-align:top}
+ code{font-family:ui-monospace,monospace;background:#8882;padding:0 .25em;border-radius:3px}
+ .toolbar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.8rem 0 .4rem}
+ #status{opacity:.75;font-size:14px}
+ textarea{width:100%;height:340px;font-family:ui-monospace,monospace;font-size:14px;box-sizing:border-box}
+ fieldset{margin:1rem 0;border:1px solid #8886;border-radius:6px}
+ fieldset label{margin-right:1.2rem;display:inline-block;margin-bottom:.4rem}
+ button{padding:.45rem 1rem;font-size:.95rem;cursor:pointer}
+ button.go{padding:.7rem 1.6rem;font-size:1.05rem}
+</style></head><body>
+<h1>TSD Rally Instruction Generator</h1>
+<p class="sub">Type or load your route, choose an output style, and generate a printable sheet.</p>
+
+<details open><summary>Input format reference</summary>
+ <p>Enter one item per line, with fields separated by <code>|</code>. Trailing fields can be left off.</p>
+ <table class="ref">
+  <tr><th>Line type</th><th>Format</th></tr>
+  <tr><td>Rally instruction</td><td><code>mileage | instruction | speed | pause | suffix | general</code></td></tr>
+  <tr><td>Odometer check or transit zone instruction</td><td><code>mileage | instruction | | | suffix | general</code> &nbsp;(no speed or pause; not timed; no checkpoints)</td></tr>
+  <tr><td>Out point (ends an odometer check or transit zone and starts a timed leg)</td><td><code>OUTPOINT | mileage | instruction | out time | speed | suffix | general</code></td></tr>
+  <tr><td>Note</td><td><code>NOTE | text | general</code> &mdash; text in the instruction column only: no number, mileage, speed, pause or suffix, and no time calculation. Works in any section; <code>general</code> is an optional rally master note.</td></tr>
+  <tr><td>File header (optional)</td><td><code>Title: ...</code> &nbsp; <code>Subtitle: ...</code> &nbsp; <code>Date: 2026-11-21</code> &nbsp; <code>Start time: 09:30:00</code> &mdash; one per line, usually at the top. When a file is loaded or pasted they fill in the form fields below and are removed from the text. <b>Save as text file</b> writes them back in.</td></tr>
+  <tr><td>Section headers</td><td><code>[ODOMETER CHECK]</code> &nbsp; <code>[TRANSIT]</code> &nbsp; <code>[RALLY]</code> &mdash; use as many sections as you need, in order (lines with no header are rally lines)</td></tr>
+  <tr><td>Comment</td><td>a line starting with <code>#</code> is ignored</td></tr>
+ </table>
+ <table class="ref">
+  <tr><th>Field / marker</th><th>What it does</th></tr>
+  <tr><td>Speed (mph)</td><td>Applies from that mileage on. Printed in the instruction as <code>CAST 30</code>.</td></tr>
+  <tr><td>Pause</td><td>Seconds (<code>30</code>), <code>mm:ss</code>, or minutes (<code>2m</code>); printed as <code>Pause 30</code>. Or <code>NEXTMIN</code> for a Richta next-minute out: the car leaves at the next whole minute after it arrives (printed as <code>Next minute out</code>; the rally master sheet shows the out time).</td></tr>
+  <tr><td>Suffix</td><td>Extra text printed at the end of the instruction, after the pause and CAST &mdash; e.g. <code>FLR</code>. Shown to participants.</td></tr>
+  <tr><td>General</td><td>Rally master only &mdash; never printed for participants. Put <code>CP</code> in it to make the line a checkpoint: it is highlighted and labeled CP on the master sheet (with its <b>CP time</b>: the time since the previous checkpoint, or since the start / out time for the first checkpoint after a start or transit zone), gets no instruction number, and is left off the participant sheet entirely (so don't put speeds, pauses or suffixes on it).</td></tr>
+  <tr><td>Out time (OUTPOINT)</td><td>One of:<br>
+   <code>TOD 09:50</code> &mdash; time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52. Participants see <code>Out time 9:50 + car number</code>.<br>
+   <code>ASSIGNED</code> &mdash; each car is given its out time. Participants see <code>Out time assigned</code>. Add a clock (<code>ASSIGNED 10:28</code>) to set the time the master sheet counts from.<br>
+   <code>NEXTMIN</code> &mdash; Richta next minute out: the car goes out at the next whole minute after it arrives. Participants see <code>Next minute out</code>. Add the arrival time to assume for the master sheet (<code>NEXTMIN 10:12:50</code>).<br>
+   Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time below). A plain clock time (<code>09:51:00</code>) or <code>+20</code> (minutes after the section starts) also still work.</td></tr>
+  <tr><td>Blank mileage</td><td>Leave the mileage empty (<code> | Left at Y</code>) while the route is still being measured. The <b>Measure</b> output shows every line &mdash; checkpoints, notes and master-only mileages included &mdash; in the participant layout, with blank mileage cells to write in, and does no calculations. Participant and rally master output need the mileages.</td></tr>
+  <tr><td><code>@</code> before a mileage</td><td><code>@4.20</code> shows that mileage on the rally master output only.</td></tr>
+  <tr><td><code>**word**</code> &nbsp; <code>*word*</code> &nbsp; <code>***word***</code></td><td>Prints the words in <b>bold</b>, <i>italic</i>, or <b><i>bold italic</i></b>. Pause and CAST are bolded automatically.</td></tr>
+  <tr><td><code>\n</code> in an instruction</td><td>Starts a new line. Use <code>\n\n</code> for a blank line between paragraphs.</td></tr>
+ </table>
+ <p>Files: load a <code>.txt</code> file in this format, or a <code>.csv</code> with the columns
+ <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks; rows like <code>Title,My Rally</code> or <code>Date,2026-11-21</code> set the title area).
+ Use <b>Save as text file</b> or <b>Save as CSV</b> (opens in Excel or Google Sheets; reload it later with Load file) to keep your route.</p>
+
+ <p>Instruction numbers (not given to notes or checkpoints) run on continuously through the odometer check, rally sections and transit zones.</p>
+
+ <p><b>Spreadsheet backup:</b> <b>Download spreadsheet (CSV with formulas)</b> saves every line plus formulas for the instruction text, perfect times, out times and checkpoint times. Open it in Excel or Google Sheets and change a mileage, speed or pause (or the start time or car number at the top) and everything recalculates. Times that are typed in the sheet (start time, out clocks) should stay in hh:mm:ss form.</p>
+</details>
+
+<form method="post" action="/generate" target="_blank">
+ <div class="toolbar">
+  <label>Load file: <input type="file" id="file" accept=".txt,.text,.tsd,.csv,text/plain,text/csv"></label>
+  <button type="button" id="save">Save as text file</button>
+  <button type="button" id="save-csv">Save as CSV</button>
+  <span id="status"></span>
+ </div>
+ <textarea name="data" id="data" spellcheck="false">{{ sample }}</textarea>
+
+ <fieldset><legend>Output options</legend>
+  <label>Title <input name="title" id="title" value="My TSD Rally" size="28"></label>
+  <label>Subtitle (optional) <input name="subtitle" id="subtitle" value="Autumn Classic - Route 2" size="28"></label><br>
+  <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
+  <label>Start time (master times) <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label><br>
+  <label><input type="radio" name="mode" value="participant" checked> Participant</label>
+  <label><input type="radio" name="mode" value="master"> Rally master</label>
+  <label><input type="radio" name="mode" value="measure"> Measure (all lines, no calculations)</label><br>
+  <label>Time resolution
+   <select name="resolution"><option value="second">Seconds</option><option value="minute">Whole minutes</option></select></label>
+  <label>Car number (master times) <input type="number" name="car" value="1" min="0" style="width:4.5em"></label><br>
+  <label><input type="checkbox" name="show_leg"> Show leg distance (participant)</label>
+ </fieldset>
+ <button class="go">Generate printable output</button>
+ <button class="go" formaction="/export" formtarget="_self" title="A backup you can open in Excel or Google Sheets: every input plus formulas for all calculated values">Download spreadsheet (CSV with formulas)</button>
+</form>
+
+<script>
+const box = document.getElementById('data'), status = document.getElementById('status');
+
+//<csv
+// Minimal RFC-4180 CSV parser: quoted cells, escaped quotes, commas and line breaks inside quotes.
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+// Convert CSV (mileage, instruction, speed, pause, general) into the pipe-separated text format.
+function csvToText(text) {
+  const out = [];
+  for (let cells of parseCSV(text)) {
+    if ((cells[0] || '').trim().startsWith('#')) { out.push(cells[0].trim().replace(/\r?\n/g, ' ')); continue; }   // comment row
+    cells = cells.map(c => c.trim().replace(/[ \t]*\r?\n[ \t]*/g, '\\n').replace(/\|/g, '/'));
+    while (cells.length && cells[cells.length - 1] === '') cells.pop();
+    if (!cells.length) continue;
+    if (/^(mile(s|age)?|odo(meter)?|dist(ance)?)$/i.test(cells[0])) continue;   // header row
+    if (/^(title|subtitle|date|start( time)?)$/i.test(cells[0]) && cells.length >= 2) {   // title-area row
+      out.push(cells[0] + ': ' + cells[1]); continue;
+    }
+    out.push(cells.join(' | '));
+  }
+  return out.join('\n') + '\n';
+}
+// Convert the pipe-separated text (plus title-area values) into CSV. Section headers and comments are
+// single-cell rows; "\n" in an instruction becomes a real line break inside the cell.
+function csvCell(s) { return /[",\r\n]|^\s|\s$/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function textToCsv(text, head) {
+  const data = [];
+  let width = 6;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('#') || /^\[.*\]$/.test(line)) { data.push({ cells: [line], pad: false }); continue; }
+    const cells = line.split('|').map(c => c.trim().replace(/\\n/g, '\n'));
+    width = Math.max(width, cells.length);
+    data.push({ cells, pad: true });
+  }
+  const rows = head.map(([k, v]) => [k, v]);
+  if (data.length) rows.push(['Mileage', 'Instruction', 'Speed', 'Pause', 'Suffix', 'General']);
+  for (const d of data) {
+    const cells = d.cells.slice();
+    while (d.pad && cells.length < width) cells.push('');
+    rows.push(cells);
+  }
+  return rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+//</csv
+
+//<hdr
+// "Title: ...", "Subtitle: ...", "Date: ...", "Start time: ..." lines at the top of the text.
+const HEADER_RE = /^\s*(title|subtitle|date|start(?:\s*time)?)\s*:\s*(.*?)\s*$/i;
+function splitHeader(text) {
+  const found = {}, rest = [];
+  for (const line of text.split(/\r?\n/)) {
+    const m = HEADER_RE.exec(line);
+    if (m && !line.includes('|')) {
+      const k = m[1].toLowerCase().startsWith('start') ? 'start' : m[1].toLowerCase();
+      found[k] = m[2];
+    } else rest.push(line);
+  }
+  return { found, rest: rest.join('\n').replace(/^\s*\n/, '') };
+}
+const pad = n => String(n).padStart(2, '0');
+function normTime(s) {            // -> 'HH:MM:SS' for <input type=time>, or null
+  const m = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\s*$/i.exec(s);
+  if (!m) return null;
+  let h = +m[1]; const ap = (m[4] || '').toLowerCase();
+  if (ap === 'pm' && h < 12) h += 12; else if (ap === 'am' && h === 12) h = 0;
+  return pad(h) + ':' + m[2] + ':' + pad(m[3] || 0);
+}
+function normDate(s) {            // -> 'YYYY-MM-DD' for <input type=date>, or null
+  let m = /^\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*$/.exec(s);
+  if (m) return m[1] + '-' + pad(m[2]) + '-' + pad(m[3]);
+  m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s);
+  if (m) return m[3] + '-' + pad(m[1]) + '-' + pad(m[2]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+//</hdr
+
+const fields = {
+  title: document.getElementById('title'), subtitle: document.getElementById('subtitle'),
+  date: document.getElementById('event_date'), start: document.getElementById('start_time'),
+};
+// Move header lines from the text box into the form fields. Returns a note for the status line.
+function pullHeader() {
+  const { found, rest } = splitHeader(box.value);
+  const keys = Object.keys(found);
+  if (!keys.length) return '';
+  const done = [], bad = [];
+  for (const k of keys) {
+    let v = found[k];
+    if (k === 'date') v = normDate(v);
+    if (k === 'start') v = normTime(v);
+    if (v === null) bad.push(k); else { fields[k].value = v; done.push(k); }
+  }
+  box.value = rest;
+  return (done.length ? ' - header applied: ' + done.join(', ') : '') +
+         (bad.length ? ' - could not read ' + bad.join(', ') : '');
+}
+
+function loadFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let text = String(reader.result).replace(/^\uFEFF/, '');
+    const isCsv = /\.csv$/i.test(file.name) || file.type === 'text/csv';
+    if (isCsv) text = csvToText(text);
+    box.value = text;
+    const note = pullHeader();
+    status.textContent = 'Loaded ' + file.name + (isCsv ? ' (converted from CSV)' : '') +
+      ' - ' + box.value.split(/\r?\n/).filter(l => l.trim()).length + ' lines' + note;
+  };
+  reader.onerror = () => { status.textContent = 'Could not read ' + file.name; };
+  reader.readAsText(file);
+}
+document.getElementById('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+box.addEventListener('dragover', e => e.preventDefault());
+box.addEventListener('drop', e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+// Header lines typed or pasted into the box are also moved into the form fields
+function headerFromBox() { const n = pullHeader(); if (n) status.textContent = n.replace(/^ - /, ''); }
+box.addEventListener('paste', () => setTimeout(headerFromBox, 0));
+box.addEventListener('change', headerFromBox);
+
+function headPairs() {
+  const p = [];
+  if (fields.title.value.trim()) p.push(['Title', fields.title.value.trim()]);
+  if (fields.subtitle.value.trim()) p.push(['Subtitle', fields.subtitle.value.trim()]);
+  if (fields.date.value) p.push(['Date', fields.date.value]);
+  if (fields.start.value) p.push(['Start time', fields.start.value]);
+  return p;
+}
+function baseName() {
+  return (fields.title.value || 'rally').trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') || 'rally';
+}
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+  status.textContent = 'Saved ' + name;
+}
+document.getElementById('save').addEventListener('click', () => {
+  headerFromBox();
+  const head = headPairs().map(([k, v]) => k + ': ' + v);
+  download(baseName() + '.txt', (head.length ? head.join('\n') + '\n\n' : '') + box.value, 'text/plain');
+});
+document.getElementById('save-csv').addEventListener('click', () => {
+  headerFromBox();
+  // BOM so Excel reads the file as UTF-8
+  download(baseName() + '.csv', '\uFEFF' + textToCsv(box.value, headPairs()), 'text/csv;charset=utf-8');
+});
+</script></body></html>

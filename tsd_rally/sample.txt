@@ -1,0 +1,35 @@
+Title: Foothills and Farmlands
+Subtitle: A PCA/SVR TSD Rally
+Date: 2027-03-13
+Start time: 09:30:00
+
+[ODOMETER CHECK]
+# mileage | instruction | (no speed) | | suffix | general
+0.00 | The rally starts as you leave the parking lot at the “START” sign.\n\nAt “START” SET YOUR ODOMETER TO 0.0\n\nLeave this point at 9:30:00 plus your car number in minutes (example: car 7 leaves at 9:37:00)\n\nProceed forward to the parking lot exit and turn LEFT on Horseshoe Bar Rd.\n\nYou have xx minutes to reach RI 11 | | | 
+0.10|LEFT (at signal?) to Enter I80 East
+4.00|EXIT I80 East at Penryn Rd. (exit?)
+4.20|LEFT at STOP (Penryn Rd.)
+5.30|RIGHT at SIGNAL (Taylor Rd.)
+6.90|RIGHT (1st Opp? / STOP) on Rock Springs Rd.
+7.25|RIGHT at STOP (Brennans Rd.)
+8.54|RIGHT at (T/STOP) on King Rd.
+9.36|STRAIGHT at STOP
+10.49|STRAIGHT at STOP 
+12.66|STRAIGHT at STOP 
+OUTPOINT | 0.00 | SET YOUR ODOMETER TO ZERO at the gate.\n\nProceed RIGHT out of parking lot at 9:50:00 plus your car number in minutes | 9:50:00 | 39
+
+[RALLY]
+# mileage | instruction | speed (mph) | pause | suffix | general 
+1.1|STRAIGHT at SIGNAL | 34 | | |
+2.2|STRAIGHT at SIGNAL | | 30 | |
+3.3|STRAIGHT at STOP
+4.5|RIGHT at STOP (Humphrey Rd.)
+@5.0|At “Speed Limit 25” | 23 | | |
+@6.0|At “Speed Limit 35” | 34 | | |
+7.8|LEFT at STOP (Humphrey Rd.) 
+9.3|LEFT at STOP (English Colony Wy.) | 30 | | FLR |
+10.1|RIGHT at STOP (Sierra College Blvd.) | 54 | 20 | 
+11.4|STRAIGHT at SIGNAL | | | 20 |
+12.9|checkpoint 1 at ? | | | | CP 1 - hidden 
+14.7|RIGHT at STOP |
+22.8|LEFT 1st OPP | 44
