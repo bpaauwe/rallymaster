@@ -83,7 +83,7 @@ def _formulas(r):
         "T": f'IF(G{r}<>"",G{r},IF(ISNUMBER(T{p}),T{p},""))',
         "U": f'IF(AND(OR(A{r}="LINE",A{r}="OUTPOINT"),ISNUMBER(D{r})),D{r},IF(ISNUMBER(U{p}),U{p},""))',
         "V": f'IF(AND(B{r}="RALLY",A{r}="LINE",ISNUMBER(D{r}),ISNUMBER(U{p})),MAX(D{r}-U{p},0),0)',
-        "W": f'IF(AND(V{r}>0,ISNUMBER(T{p})),V{r}/T{p}*3600,0)',
+        "W": f'IF(AND(V{r}>0,ISNUMBER(T{p})),INT(V{r}/T{p}*3600),0)',
         "X": base,
         "Y": f'IF(A{r}="OUTPOINT",0,IF(ISNUMBER(AA{p}),AA{p},0)+W{r})',
         "Z": (f'IF(H{r}="NEXTMIN",(INT(ROUND(AB{r},0)/60)+1)*60-AB{r},'

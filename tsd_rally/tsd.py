@@ -291,7 +291,7 @@ def compute(segments, errors, start=0.0, car=0):
                     errors.append(f"Line {r.line_no}: mileage {r.mileage} is less than previous {prev}")
                 r.leg_dist = max(r.mileage - prev, 0)
                 if r.leg_dist and speed:
-                    r.leg_sec = r.leg_dist / speed * 3600
+                    r.leg_sec = int(r.leg_dist / speed * 3600)
             elapsed += r.leg_sec
             r.arrive = elapsed
             r.arrive_clock = seg.base + elapsed

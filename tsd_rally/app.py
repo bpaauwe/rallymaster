@@ -2,9 +2,10 @@ import os
 import re
 from datetime import date, datetime
 
-from flask import Flask, render_template, request
+from flask import Flask, Response, render_template, request
 from markupsafe import Markup, escape
 
+import export
 import tsd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -12,12 +13,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TPL = os.path.join(HERE, "templates")
 app = Flask(__name__, template_folder=TPL if os.path.isdir(TPL) else HERE)
 
+BOLD_ITALIC_RE = re.compile(r"\*\*\*(.+?)\*\*\*")
 BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+ITALIC_RE = re.compile(r"(?<![\w*])\*(?!\s)(.+?)(?<![\s*])\*(?![\w*])")
 
 
 def rich(text):
-    """Escape text, then turn **word** into bold. Safe against HTML in the input."""
-    return Markup(BOLD_RE.sub(r"<strong>\1</strong>", str(escape(text))))
+    """Escape text, then turn ***word*** into bold italic, **word** into bold and *word* into
+    italic. Safe against HTML in the input."""
+    s = str(escape(text))
+    s = BOLD_ITALIC_RE.sub(r"<strong><em>\1</em></strong>", s)
+    s = BOLD_RE.sub(r"<strong>\1</strong>", s)
+    return Markup(ITALIC_RE.sub(r"<em>\1</em>", s))
 
 
 def pretty_date(s):
@@ -68,14 +75,10 @@ def index():
     return render_template("index.html", sample=SAMPLE, today=date.today().isoformat())
 
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    f = request.form
-    mode = f.get("mode", "participant")
-    whole_min = f.get("resolution") == "minute"
-    # Header lines in the text (Title:, Subtitle:, Date:, Start time:) override the form fields
+def read_settings(f, errors):
+    """Header lines in the text (Title:, Subtitle:, Date:, Start time:) override the form fields.
+    Returns (text without header lines, meta, start seconds, car number)."""
     meta, text = tsd.extract_header(f.get("data", ""))
-    segments, errors = tsd.parse_input(text)
     try:
         start = tsd.parse_time_text(meta["start"]) if "start" in meta else None
     except ValueError as e:
@@ -87,6 +90,34 @@ def generate():
         car = max(int(float(f.get("car") or 0)), 0)
     except ValueError:
         car = 0
+    return text, meta, start, car
+
+
+@app.route("/export", methods=["POST"])
+def export_csv():
+    """Spreadsheet backup: inputs plus formulas for every calculated value."""
+    f = request.form
+    errors = []
+    text, meta, start, car = read_settings(f, errors)
+    segments, perrors = tsd.parse_input(text)
+    csv_text = export.build_csv(
+        segments, perrors, meta.get("title", f.get("title", "Rally")),
+        meta.get("subtitle", f.get("subtitle", "")).strip(),
+        meta.get("date", f.get("event_date", "")), start, car)
+    name = re.sub(r"\s+", "_", re.sub(r"[^\w\- ]+", "", meta.get("title", f.get("title", "rally")))).strip("_") or "rally"
+    return Response(csv_text, mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}_spreadsheet.csv"'})
+
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    f = request.form
+    mode = f.get("mode", "participant")
+    whole_min = f.get("resolution") == "minute"
+    header_errors = []
+    text, meta, start, car = read_settings(f, header_errors)
+    segments, errors = tsd.parse_input(text)
+    errors = header_errors + errors
     if mode != "measure":   # the measure sheet does no calculations (mileages may be blank)
         tsd.compute(segments, errors, start, car)
     rows = [r for s in segments for r in s.rows]
