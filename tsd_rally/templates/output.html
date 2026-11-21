@@ -17,7 +17,13 @@
  .gap{height:.6em}
  .err{color:#b00020;border:1px solid #b00020;padding:.5rem;margin:1rem 0}
  .noprint button{margin-bottom:1rem}
- @page{margin:.5in}
+ @page{
+  margin:.5in .5in .75in .5in;
+  /* page numbers in the footer (Chrome / Edge 131+; other browsers: use 'Headers and footers' in the print dialog) */
+  @bottom-center{content:"Page " counter(page) " of " counter(pages);font:bold 11pt Arial,Helvetica,sans-serif;color:#000}
+  @bottom-left{content:"{{ footer_left }}";font:10pt Arial,Helvetica,sans-serif;color:#000}
+  @bottom-right{content:"{{ footer_right }}";font:10pt Arial,Helvetica,sans-serif;color:#000}
+ }
  @media print{
   .noprint{display:none}
   body{margin:0;color:#000;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -46,7 +52,8 @@
 {% macro lines(r) %}{% for l in r.lines %}<div{% if not l %} class="gap"{% endif %}>{{ l }}</div>{% endfor %}{% endmacro %}
 {% macro mile(r) %}{% if r.is_note or r.mileage is none %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
 
-<div class="noprint"><button onclick="print()">Print</button></div>
+<div class="noprint"><button onclick="print()">Print</button>
+ <small>Page numbers print in the footer in Chrome and Edge (v131+). In other browsers, turn on &ldquo;Headers and footers&rdquo; in the print dialog. If you get two sets of page numbers, turn that option off.</small></div>
 <header class="title-area">
  <h1>{{ title }}</h1>
  {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}

@@ -27,6 +27,11 @@ def rich(text):
     return Markup(ITALIC_RE.sub(r"<em>\1</em>", s))
 
 
+def css_text(s):
+    """Text for a CSS content:"..." string (drops characters that would end the string)."""
+    return Markup(re.sub(r'["\\<>\r\n]', "", s or ""))
+
+
 def pretty_date(s):
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y", "%b %d, %Y", "%d %B %Y"):
         try:
@@ -173,12 +178,14 @@ def generate():
                 r.leg_vis = max(r.mileage - vis[i - 1].mileage, 0)
                 r.hide_leg = r.hide_mileage or vis[i - 1].hide_mileage
 
+    title = meta.get("title", f.get("title", "Rally"))
+    date_text = pretty_date(meta.get("date", f.get("event_date", "")))
+    label = {"master": "Rally Master Sheet", "measure": "Measure Sheet"}.get(mode, "Route Instructions")
     return render_template(
-        "output.html", segments=segments, errors=errors, mode=mode,
-        label={"master": "Rally Master Sheet", "measure": "Measure Sheet"}.get(mode, "Route Instructions"),
-        title=meta.get("title", f.get("title", "Rally")),
+        "output.html", segments=segments, errors=errors, mode=mode, label=label,
+        title=title, date_text=date_text,
         subtitle=meta.get("subtitle", f.get("subtitle", "")).strip(),
-        date_text=pretty_date(meta.get("date", f.get("event_date", ""))),
+        footer_left=css_text(f"{title} - {label}"), footer_right=css_text(date_text),
         show_leg=bool(f.get("show_leg")),
         clock=lambda t: tsd.fmt_clock(t, whole_min), elapsed=tsd.fmt_elapsed,
         cptime=lambda s: tsd.fmt_ms(s, whole_min),
