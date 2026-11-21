@@ -39,8 +39,8 @@ class Row:
     next_min: bool = False       # next-minute out (Richta: Flying Start Next Minute): wait for the next whole minute
     is_note: bool = False        # text-only line: no number, mileage, time, speed, pause or suffix
     is_out: bool = False         # out point that starts a timed leg
-    out_kind: str = ""              # 'tod' | 'assigned' | 'nextmin' | 'fixed' | 'rel'
-    out_time: float | None = None   # clock seconds: the TOD, assigned/arrival reference, or fixed time
+    out_kind: str = ""              # 'tod' | 'nextmin' | 'fixed' | 'rel'
+    out_time: float | None = None   # clock seconds: the TOD, the arrival to assume, or a fixed time
     out_rel: float | None = None    # legacy '+N': seconds after the start of the preceding section
 
 
@@ -115,22 +115,20 @@ def parse_out_time(text: str):
 
       TOD 09:50       time of day plus car number: out time = 09:50 + car number (minutes)
                       (also written 'TOD + car number 09:50' or '09:50 + car')
-      ASSIGNED [t]    out time is assigned to each car; optional t = clock for the master's times
       NEXTMIN [t]     Flying Start Next Minute (Richta): the next whole minute after arrival; optional t =
                       the arrival time to assume for the master's times
       09:51:00        fixed clock time for every car (older form)
       +20             minutes after the preceding section starts (older form)"""
     s = text.strip()
-    bad = ValueError(f"can't read out time '{text}' (use TOD 09:50, ASSIGNED or NEXTMIN)")
+    bad = ValueError(f"can't read out time '{text}' (use TOD 09:50 or NEXTMIN)")
     try:
         if s.startswith("+"):
             return "rel", None, float(s[1:]) * 60
         up = s.upper()
-        m = re.match(r"(ASSIGNED|NEXTMIN|NEXT[ -]MINUTE|NM)\b\s*(.*)$", up)
+        m = re.match(r"(NEXTMIN|NEXT[ -]MINUTE|NM)\b\s*(.*)$", up)
         if m:
-            kind = "assigned" if m.group(1) == "ASSIGNED" else "nextmin"
             rest = m.group(2).strip()
-            return kind, (parse_time_text(rest) if rest else None), None
+            return "nextmin", (parse_time_text(rest) if rest else None), None
         rest = re.sub(r"\b(TOD|CAR|NUMBER|NO)\b\.?|[+#]", " ", up).strip()
         clock = parse_time_text(rest)
         return ("tod" if re.search(r"\b(TOD|CAR)\b", up) else "fixed"), clock, None
@@ -218,11 +216,11 @@ def parse_input(text: str):
                 speed = float(parts[4])
                 if speed <= 0:
                     raise ValueError("speed must be > 0")
-                mile, hide, raw = _mile(parts[1])
+                mile, hide, mtext = _mile(parts[1])
                 kind, t, rel = parse_out_time(parts[3])
                 out = _finish(Row(n, mile, parts[2], speed=speed, suffix=parts[5], general=parts[6],
                                   is_out=True, out_kind=kind, out_time=t, out_rel=rel,
-                                  hide_mileage=hide, mileage_raw=raw))
+                                  hide_mileage=hide, mileage_raw=mtext))
                 if cur is not None and cur.kind in UNTIMED:
                     cur.has_out = True
                 cur = Segment("rally", rows=[out], line_no=n)   # an out point always starts a timed leg
@@ -231,9 +229,9 @@ def parse_input(text: str):
             parts += [""] * (6 - len(parts))
             if cur is None:
                 begin("rally", n)
-            mile, hide, raw = _mile(parts[0])
+            mile, hide, mtext = _mile(parts[0])
             row = Row(n, mile, parts[1], suffix=parts[4], general=parts[5], hide_mileage=hide,
-                      mileage_raw=raw)
+                      mileage_raw=mtext)
             if cur.kind in UNTIMED:
                 if parts[2] or parts[3]:
                     errors.append(f"Line {n}: speed/pause ignored in {cur.title.lower()}")
@@ -278,8 +276,6 @@ def compute(segments, errors, start=0.0, car=0):
             k = first.out_kind
             if k == "tod":                # time of day + car number (minutes)
                 seg.base = first.out_time + car * 60
-            elif k == "assigned":         # assigned per car; master times start at the given clock
-                seg.base = first.out_time if first.out_time is not None else ref
             elif k == "nextmin":          # next whole minute after arrival
                 seg.out_arrival = first.out_time if first.out_time is not None else ref
                 seg.base = (_r(seg.out_arrival) // 60 + 1) * 60

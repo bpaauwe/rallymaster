@@ -71,11 +71,10 @@
   <table class="ref">
    <tr><th>Out time</th><th>Meaning</th></tr>
    <tr><td><code>TOD 09:50</code></td><td>Time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52. Participants see <code>Out time 9:50 + car number</code>.</td></tr>
-   <tr><td><code>ASSIGNED</code></td><td>Each car is given its out time. Participants see <code>Out time assigned</code>. Add a clock (<code>ASSIGNED 10:28</code>) to set the time the master sheet counts from.</td></tr>
    <tr><td><code>NEXTMIN</code></td><td>Flying Start Next Minute (the Richta checkpoint type): the car goes out at the next whole minute after it arrives. Participants see <code>Next minute out</code>. Add the arrival time to assume for the master sheet (<code>NEXTMIN 10:12:50</code>).</td></tr>
    <tr><td>Older forms</td><td>A plain clock time (<code>09:51:00</code>) or <code>+20</code> (minutes after the section starts) also still work.</td></tr>
   </table>
-  <p>Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time under Rally master times). The <b>Car number</b> under Rally master times sets which car the times are shown for.</p>
+  <p>Without a clock, <code>NEXTMIN</code> uses the time the car left the previous timed section (or the Start time under Rally master settings). The <b>Car number</b> under Rally master settings sets which car the times are shown for.</p>
  </details>
 
  <details class="acc sub"><summary>Text markup and mileage markers</summary>
@@ -136,7 +135,7 @@
  <details class="acc" id="master-settings"><summary>Rally master settings</summary>
   <p class="hint">Used by the rally master sheet and the spreadsheet download. The participant and measure sheets show no clock times.</p>
   <div class="set"><label>Start time <input type="time" step="1" name="start_time" id="start_time" value="{{ form.start_time }}"></label>
-   <span class="hint">The clock the times count from when the route has no OUTPOINT, and where an ASSIGNED or NEXTMIN out point with no clock starts from.</span></div>
+   <span class="hint">The clock the times count from when the route has no OUTPOINT, and where a NEXTMIN out point with no clock starts from.</span></div>
   <div class="set"><label>Car number <input type="number" name="car" id="car" value="1" min="0" style="width:4.5em"></label>
    <span class="hint">The car the times are worked out for. It only matters for out points written as <code>TOD</code> (out time = time of day + car number minutes): with <code>TOD 09:50</code>, car 1 goes out at 09:51 and car 2 at 09:52.</span></div>
   <div class="set" id="opt-resolution"><label>Time resolution

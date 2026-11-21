@@ -66,7 +66,7 @@ NOTE | Watch for farm equipment on the road. | Note lines have no number or mile
 12.00 | Obey all traffic laws
 15.00 | Left at light
 NOTE | **No stopping** in the transit zone.
-OUTPOINT | 18.00 | Out point: Fire Station | ASSIGNED 10:28 | 35
+OUTPOINT | 18.00 | Out point: Fire Station | TOD 10:28 | 35
 
 [RALLY]
 18.50 | Right at stop sign | | | FLR
@@ -205,8 +205,6 @@ def render_output(f, preview=False):
             bits.append("**Pause %g**" % r.pause)
         if r.is_out and r.out_kind == "tod":
             bits.append("**Out time %s + car number**" % tsd.fmt_tod(r.out_time))
-        elif r.is_out and r.out_kind == "assigned":
-            bits.append("**Out time assigned**")
         elif r.is_out and r.out_kind == "nextmin":
             bits.append("**Next minute out**")
         if r.speed is not None:
@@ -222,8 +220,6 @@ def render_output(f, preview=False):
             o = seg.rows[0]
             if o.out_kind == "tod":
                 seg.out_note = f"TOD {tsd.fmt_tod(o.out_time)} + car number {car}"
-            elif o.out_kind == "assigned":
-                seg.out_note = "assigned to each car; times are shown from this reference"
             elif o.out_kind == "nextmin":
                 seg.out_note = "next minute after arrival; times assume arrival at " + tsd.fmt_clock(seg.out_arrival, decimal)
     n = 0

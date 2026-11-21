@@ -23,7 +23,7 @@ HELP = [
     "Edit the input columns A-M (and B4 start time, B5 car number). Columns N onward are formulas and recalculate. Mileages are kept as entered; calculations round them to 0.01 mile.",
     "Type: SECTION, LINE, NOTE or OUTPOINT. Section: ODO, TRANSIT or RALLY. Checkpoint / Hide mileage: Y or blank.",
     "Pause: seconds, or NEXTMIN for a next-minute out (Richta: Flying Start Next Minute). Speed: mph, applies from that line on (CAST).",
-    "Out type (OUTPOINT rows): TOD (out clock + car number minutes), ASSIGNED, NEXTMIN, FIXED, or REL (minutes after previous section).",
+    "Out type (OUTPOINT rows): TOD (out clock + car number minutes), NEXTMIN, FIXED, or REL (minutes after previous section).",
     "Markup in text: **bold**, *italic*, and \\n for a new line. Columns O-S are display text; T-AE are the seconds-based helpers.",
 ]
 
@@ -60,7 +60,7 @@ def _formulas(r):
                  f'IF(ISNUMBER(H{r}),IF(H{r}>0,"Pause "&H{r},""),""))')
     out_bit = (f'IF(A{r}="OUTPOINT",IF(L{r}="TOD","Out time "&INT({sec("M"+str(r))}/3600)&":"&'
                f'TEXT(MOD(INT({sec("M"+str(r))}/60),60),"00")&" + car number",'
-               f'IF(L{r}="ASSIGNED","Out time assigned",IF(L{r}="NEXTMIN","Next minute out",""))),"")')
+               f'IF(L{r}="NEXTMIN","Next minute out","")),"")')
     cast_bit = f'IF(G{r}<>"","CAST "&G{r},"")'
     base = (f'IF(A{r}<>"OUTPOINT",IF(ISNUMBER(X{p}),X{p},{start}),'
             f'IF(L{r}="TOD",{sec("M"+str(r))}+$B$5*60,'
