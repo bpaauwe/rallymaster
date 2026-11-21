@@ -1,6 +1,7 @@
 """TSD rally calculations. Distances in miles, speeds in mph, pauses in seconds."""
 import math
 import re
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from dataclasses import dataclass, field
 
 def _r(x):
@@ -17,10 +18,11 @@ NEXTMIN = {"NEXTMIN", "NM", "NEXT MINUTE", "NEXT-MINUTE"}
 @dataclass
 class Row:
     line_no: int
-    mileage: float | None   # None = left blank (fine for Measure output; timed output needs it)
+    mileage: float | None   # rounded to 1/100 mile (what is shown and calculated); None = left blank
     instruction: str = ""
     speed: float | None = None
     pause: float = 0.0           # seconds (computed for NEXTMIN)
+    mileage_raw: str = ""        # mileage exactly as entered (e.g. 3.456); kept for saving/export
     suffix: str = ""             # participant-visible text appended after pause and CAST (e.g. FLR)
     general: str = ""            # rally master notes / checkpoint flag (never on participant output)
     leg_dist: float = 0.0
@@ -137,10 +139,22 @@ def parse_out_time(text: str):
 
 
 def _mile(text):
-    """'4.20' -> (4.2, False); '@4.20' -> (4.2, True) = mileage for rally master only."""
+    """'4.256' -> (4.26, False, '4.256'); '@4.256' -> (4.26, True, '4.256'); '' -> (None, False, '').
+
+    Mileages may be entered to 1/1000 mile; they are displayed and calculated rounded
+    (half up) to 1/100 mile. The entered text is returned too so it can be saved unchanged."""
     t = text.strip()
+    hide = t.startswith("@")
     num = t.lstrip("@").strip()
-    return (float(num) if num else None), t.startswith("@")
+    if not num:
+        return None, hide, ""
+    try:
+        d = Decimal(num)
+        if not d.is_finite():
+            raise InvalidOperation
+        return float(d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)), hide, num
+    except InvalidOperation:
+        raise ValueError(f"can't read mileage '{num}'") from None
 
 
 def _finish(row):
@@ -161,6 +175,7 @@ def parse_input(text: str):
     Out point: OUTPOINT | mileage | instruction | out time | speed | suffix | general
                out time = clock time (09:51:00) or +minutes after the section starts (+20)
     A leading @ on a mileage shows it on the rally master output only.
+    Mileages may have up to 3 decimals; calculations and displays use them rounded to 0.01.
     Blank lines and lines starting with # are skipped."""
     segments, errors = [], []
     cur = None
@@ -203,11 +218,11 @@ def parse_input(text: str):
                 speed = float(parts[4])
                 if speed <= 0:
                     raise ValueError("speed must be > 0")
-                mile, hide = _mile(parts[1])
+                mile, hide, raw = _mile(parts[1])
                 kind, t, rel = parse_out_time(parts[3])
                 out = _finish(Row(n, mile, parts[2], speed=speed, suffix=parts[5], general=parts[6],
                                   is_out=True, out_kind=kind, out_time=t, out_rel=rel,
-                                  hide_mileage=hide))
+                                  hide_mileage=hide, mileage_raw=raw))
                 if cur is not None and cur.kind in UNTIMED:
                     cur.has_out = True
                 cur = Segment("rally", rows=[out], line_no=n)   # an out point always starts a timed leg
@@ -216,8 +231,9 @@ def parse_input(text: str):
             parts += [""] * (6 - len(parts))
             if cur is None:
                 begin("rally", n)
-            mile, hide = _mile(parts[0])
-            row = Row(n, mile, parts[1], suffix=parts[4], general=parts[5], hide_mileage=hide)
+            mile, hide, raw = _mile(parts[0])
+            row = Row(n, mile, parts[1], suffix=parts[4], general=parts[5], hide_mileage=hide,
+                      mileage_raw=raw)
             if cur.kind in UNTIMED:
                 if parts[2] or parts[3]:
                     errors.append(f"Line {n}: speed/pause ignored in {cur.title.lower()}")
@@ -289,7 +305,7 @@ def compute(segments, errors, start=0.0, car=0):
             if prev is not None:
                 if r.mileage < prev:
                     errors.append(f"Line {r.line_no}: mileage {r.mileage} is less than previous {prev}")
-                r.leg_dist = max(r.mileage - prev, 0)
+                r.leg_dist = max(_r((r.mileage - prev) * 100) / 100, 0)   # exact hundredths
                 if r.leg_dist and speed:
                     r.leg_sec = int(r.leg_dist / speed * 3600)
             elapsed += r.leg_sec

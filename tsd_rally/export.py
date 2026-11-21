@@ -20,7 +20,7 @@ HEADERS = [
     "Arrival clock (sec)", "Departure clock (sec)", "Last CP elapsed (sec)", "CP time (sec)",
 ]
 HELP = [
-    "Edit the input columns A-M (and B4 start time, B5 car number). Columns N onward are formulas and recalculate.",
+    "Edit the input columns A-M (and B4 start time, B5 car number). Columns N onward are formulas and recalculate. Mileages are kept as entered; calculations round them to 0.01 mile.",
     "Type: SECTION, LINE, NOTE or OUTPOINT. Section: ODO, TRANSIT or RALLY. Checkpoint / Hide mileage: Y or blank.",
     "Pause: seconds, or NEXTMIN for a Richta next-minute out. Speed: mph, applies from that line on (CAST).",
     "Out type (OUTPOINT rows): TOD (out clock + car number minutes), ASSIGNED, NEXTMIN, FIXED, or REL (minutes after previous section).",
@@ -81,8 +81,8 @@ def _formulas(r):
         "R": f'IF(AND({timed},A{r}="LINE",Z{r}>0),{_clk("AC"+str(r))},"")',
         "S": f'IF(AE{r}="","",INT(ROUND(AE{r},0)/60)&":"&TEXT(MOD(ROUND(AE{r},0),60),"00"))',
         "T": f'IF(G{r}<>"",G{r},IF(ISNUMBER(T{p}),T{p},""))',
-        "U": f'IF(AND(OR(A{r}="LINE",A{r}="OUTPOINT"),ISNUMBER(D{r})),D{r},IF(ISNUMBER(U{p}),U{p},""))',
-        "V": f'IF(AND(B{r}="RALLY",A{r}="LINE",ISNUMBER(D{r}),ISNUMBER(U{p})),MAX(D{r}-U{p},0),0)',
+        "U": f'IF(AND(OR(A{r}="LINE",A{r}="OUTPOINT"),ISNUMBER(D{r})),ROUND(D{r},2),IF(ISNUMBER(U{p}),U{p},""))',
+        "V": f'IF(AND(B{r}="RALLY",A{r}="LINE",ISNUMBER(D{r}),ISNUMBER(U{p})),ROUND(MAX(ROUND(D{r},2)-U{p},0),2),0)',
         "W": f'IF(AND(V{r}>0,ISNUMBER(T{p})),INT(V{r}/T{p}*3600),0)',
         "X": base,
         "Y": f'IF(A{r}="OUTPOINT",0,IF(ISNUMBER(AA{p}),AA{p},0)+W{r})',
@@ -136,7 +136,7 @@ def build_csv(segments, errors, title, subtitle, date_text, start_sec, car):
                 inp["A"] = "NOTE"
             else:
                 inp["A"] = "OUTPOINT" if x.is_out else "LINE"
-                inp["D"] = _num(x.mileage)
+                inp["D"] = x.mileage_raw        # exactly as entered (e.g. 3.456)
                 inp["E"] = "Y" if x.hide_mileage else ""
                 inp["G"] = _num(x.speed)
                 inp["I"] = _safe(x.suffix)
