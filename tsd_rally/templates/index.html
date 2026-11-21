@@ -4,38 +4,44 @@
 <style>
  :root{color-scheme:light dark}
  body{font-family:system-ui,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;line-height:1.4}
- h1{margin-bottom:.2rem} .sub{margin-top:0;opacity:.75}
- .help{margin:1rem 0}
- .help-head{display:flex;justify-content:space-between;align-items:baseline}
- .help-head h2{margin:0;font-size:1.15rem} .help-head a{font-size:14px}
- .help details{border:1px solid #8886;border-radius:6px;margin:.4rem 0}
- .help summary{cursor:pointer;font-weight:600;padding:.55rem .9rem;list-style:none;user-select:none}
- .help summary::-webkit-details-marker{display:none}
- .help summary::before{content:"\25B8";display:inline-block;width:1.2em;transition:transform .15s}
- .help details[open]>summary::before{transform:rotate(90deg)}
- .help details[open]>summary{border-bottom:1px solid #8886}
- .help details>*:not(summary){margin-left:.9rem;margin-right:.9rem}
- .help details>*:last-child{margin-bottom:.7rem}
- .help details>table.ref{width:calc(100% - 1.8rem)}
+ h1{margin:0 0 .6rem;font-size:1.5rem}
+ details.acc{border:1px solid #8886;border-radius:6px;margin:.4rem 0}
+ details.acc>summary{cursor:pointer;font-weight:600;padding:.5rem .9rem;list-style:none;user-select:none}
+ details.acc>summary::-webkit-details-marker{display:none}
+ details.acc>summary::before{content:"\25B8";display:inline-block;width:1.2em;transition:transform .15s}
+ details.acc[open]>summary::before{transform:rotate(90deg)}
+ details.acc[open]>summary{border-bottom:1px solid #8886}
+ details.acc>*:not(summary){margin-left:.9rem;margin-right:.9rem}
+ details.acc>*:last-child{margin-bottom:.7rem}
+ details.acc>table.ref{width:calc(100% - 1.8rem)}
+ .help-links{margin-top:.5rem;font-size:14px;text-align:right}
+ .row{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center;margin:.6rem 0}
+ .row label{white-space:nowrap}
+ .set{margin:.55rem 0}
+ .set .hint{margin:.1rem 0 0}
  table.ref{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:14px}
  table.ref th,table.ref td{border:1px solid #8886;padding:4px 8px;text-align:left;vertical-align:top}
  code{font-family:ui-monospace,monospace;background:#8882;padding:0 .25em;border-radius:3px}
  .toolbar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.8rem 0 .4rem}
  #status{opacity:.75;font-size:14px}
- textarea{width:100%;height:340px;font-family:ui-monospace,monospace;font-size:14px;box-sizing:border-box}
+ textarea{width:100%;height:58vh;min-height:320px;font-family:ui-monospace,monospace;font-size:14px;box-sizing:border-box}
  fieldset{margin:1rem 0;border:1px solid #8886;border-radius:6px}
- fieldset label{margin-right:1.2rem;display:inline-block;margin-bottom:.4rem}
+ fieldset.opts label{margin-right:1.2rem;display:inline-block;margin-bottom:.4rem}
+ fieldset.opts label.opt{display:block;margin:.25rem 0}
+ label.opt small{display:block;margin-left:1.7rem;opacity:.75}
+ .hint{display:block;font-size:13px;opacity:.75;margin:0 0 .6rem}
+ label .hint{display:inline;margin-left:.4rem}
+ .dim{opacity:.45}
+ .grp{display:inline-flex;gap:.4rem;align-items:center}
  button{padding:.45rem 1rem;font-size:.95rem;cursor:pointer}
  button.go{padding:.7rem 1.6rem;font-size:1.05rem}
 </style></head><body>
 <h1>TSD Rally Instruction Generator</h1>
-<p class="sub">Type or load your route, choose an output style, and generate a printable sheet.</p>
 
-<section class="help" id="help">
- <div class="help-head"><h2>Help</h2>
-  <span><a href="#" id="expand-all">Expand all</a> &middot; <a href="#" id="collapse-all">Collapse all</a></span></div>
+<details class="acc" id="help"><summary>Help and format reference</summary>
+ <div class="help-links"><a href="#" id="expand-all">Expand all</a> &middot; <a href="#" id="collapse-all">Collapse all</a></div>
 
- <details open><summary>Line types</summary>
+ <details class="acc sub"><summary>Line types</summary>
   <p>Enter one item per line, with fields separated by <code>|</code>. Trailing fields can be left off.</p>
   <table class="ref">
    <tr><th>Line type</th><th>Format</th></tr>
@@ -49,7 +55,7 @@
   <p>Instruction numbers (not given to notes or checkpoints) run on continuously through the odometer check, rally sections and transit zones.</p>
  </details>
 
- <details><summary>Speed, pause, suffix and general</summary>
+ <details class="acc sub"><summary>Speed, pause, suffix and general</summary>
   <table class="ref">
    <tr><th>Field</th><th>What it does</th></tr>
    <tr><td>Speed (mph)</td><td>Applies from that mileage on. Printed in the instruction as <code>CAST 30</code>.</td></tr>
@@ -59,7 +65,7 @@
   </table>
  </details>
 
- <details><summary>Out times (OUTPOINT)</summary>
+ <details class="acc sub"><summary>Out times (OUTPOINT)</summary>
   <table class="ref">
    <tr><th>Out time</th><th>Meaning</th></tr>
    <tr><td><code>TOD 09:50</code></td><td>Time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52. Participants see <code>Out time 9:50 + car number</code>.</td></tr>
@@ -67,10 +73,10 @@
    <tr><td><code>NEXTMIN</code></td><td>Richta next minute out: the car goes out at the next whole minute after it arrives. Participants see <code>Next minute out</code>. Add the arrival time to assume for the master sheet (<code>NEXTMIN 10:12:50</code>).</td></tr>
    <tr><td>Older forms</td><td>A plain clock time (<code>09:51:00</code>) or <code>+20</code> (minutes after the section starts) also still work.</td></tr>
   </table>
-  <p>Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time in the output options). The <b>Car number</b> option sets which car the rally master times are shown for.</p>
+  <p>Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time under Rally master times). The <b>Car number</b> under Rally master times sets which car the times are shown for.</p>
  </details>
 
- <details><summary>Text markup and mileage markers</summary>
+ <details class="acc sub"><summary>Text markup and mileage markers</summary>
   <table class="ref">
    <tr><th>Marker</th><th>What it does</th></tr>
    <tr><td><code>**word**</code> &nbsp; <code>*word*</code> &nbsp; <code>***word***</code></td><td>Prints the words in <b>bold</b>, <i>italic</i>, or <b><i>bold italic</i></b>. Pause and CAST are bolded automatically.</td></tr>
@@ -80,7 +86,7 @@
   </table>
  </details>
 
- <details><summary>Output types and printing</summary>
+ <details class="acc sub"><summary>Output types and printing</summary>
   <table class="ref">
    <tr><th>Output</th><th>What it shows</th></tr>
    <tr><td>Participant</td><td>Instruction numbers, mileage and instructions (with Pause, CAST and suffix). Checkpoints, General notes and master-only mileages are left out. Leg distances are optional.</td></tr>
@@ -90,43 +96,57 @@
   <p>Page numbers print in the footer in Chrome and Edge (v131+); in other browsers turn on &ldquo;Headers and footers&rdquo; in the print dialog.</p>
  </details>
 
- <details><summary>Files, header and spreadsheet backup</summary>
+ <details class="acc sub"><summary>Files, header and spreadsheet backup</summary>
   <p><b>File header</b> (optional): <code>Title: ...</code> &nbsp; <code>Subtitle: ...</code> &nbsp; <code>Date: 2026-11-21</code> &nbsp; <code>Start time: 09:30:00</code>, one per line, usually at the top. When a file is loaded or pasted they fill in the form fields below and are removed from the text. <b>Save as text file</b> writes them back in.</p>
   <p><b>Loading:</b> a <code>.txt</code> file in this format, or a <code>.csv</code> with the columns <code>mileage, instruction, speed, pause, suffix, general</code> (header row optional; cells may contain line breaks; rows like <code>Title,My Rally</code> or <code>Date,2026-11-21</code> set the title area).</p>
   <p><b>Saving:</b> <b>Save as text file</b> or <b>Save as CSV</b> keeps your route (reload it later with Load file).</p>
   <p><b>Spreadsheet backup:</b> <b>Download spreadsheet (CSV with formulas)</b> saves every line plus formulas for the instruction text, perfect times, out times and checkpoint times. Open it in Excel or Google Sheets and change a mileage, speed or pause (or the start time or car number at the top) and everything recalculates. Times that are typed in the sheet (start time, out clocks) should stay in hh:mm:ss form.</p>
  </details>
-</section>
+</details>
 
-<form method="post" action="/generate" target="_blank">
+<form method="post" action="/generate" target="_blank" id="route-form">
  <div class="toolbar">
   <label>Load file: <input type="file" id="file" accept=".txt,.text,.tsd,.csv,text/plain,text/csv"></label>
-  <button type="button" id="save">Save as text file</button>
-  <button type="button" id="save-csv">Save as CSV</button>
+  <span class="grp">Save:
+   <button type="button" id="save">Text file</button>
+   <button type="button" id="save-csv">CSV</button>
+   <button type="button" id="save-sheet" title="A backup you can open in Excel or Google Sheets: every input plus formulas for all calculated values">Spreadsheet with formulas</button>
+  </span>
   <span id="status"></span>
  </div>
  <textarea name="data" id="data" spellcheck="false">{{ sample }}</textarea>
 
- <fieldset><legend>Output options</legend>
-  <label>Title <input name="title" id="title" value="My TSD Rally" size="28"></label>
-  <label>Subtitle (optional) <input name="subtitle" id="subtitle" value="Autumn Classic - Route 2" size="28"></label><br>
+ <div class="row">
+  <label>Title <input name="title" id="title" value="My TSD Rally" size="24"></label>
+  <label>Subtitle <input name="subtitle" id="subtitle" value="Autumn Classic - Route 2" size="24" placeholder="(optional)"></label>
   <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
-  <label>Start time (master times) <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label><br>
-  <label><input type="radio" name="mode" value="participant" checked> Participant</label>
-  <label><input type="radio" name="mode" value="master"> Rally master</label>
-  <label><input type="radio" name="mode" value="measure"> Measure (all lines, no calculations)</label><br>
-  <label>Time resolution
+ </div>
+
+ <div class="row">
+  <b>Output:</b>
+  <label title="Numbered instructions with mileage. Checkpoints and rally master notes are left out."><input type="radio" name="mode" value="participant" checked> Participant</label>
+  <label title="Every line, with perfect times, out times and checkpoint times."><input type="radio" name="mode" value="master"> Rally master</label>
+  <label title="Every line in the participant layout with blank mileage cells to write in. No calculations."><input type="radio" name="mode" value="measure"> Measure</label>
+  <button class="go">Generate printable output</button>
+ </div>
+
+ <details class="acc" id="master-settings"><summary>Rally master settings</summary>
+  <p class="hint">Used by the rally master sheet and the spreadsheet download. The participant and measure sheets show no clock times.</p>
+  <div class="set"><label>Start time <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label>
+   <span class="hint">The clock the times count from when the route has no OUTPOINT, and where an ASSIGNED or NEXTMIN out point with no clock starts from.</span></div>
+  <div class="set"><label>Car number <input type="number" name="car" id="car" value="1" min="0" style="width:4.5em"></label>
+   <span class="hint">The car the times are worked out for. It only matters for out points written as <code>TOD</code> (out time = time of day + car number minutes): with <code>TOD 09:50</code>, car 1 goes out at 09:51 and car 2 at 09:52.</span></div>
+  <div class="set" id="opt-resolution"><label>Time resolution
    <select name="resolution"><option value="second">Seconds</option><option value="minute">Whole minutes</option></select></label>
-  <label>Car number (master times) <input type="number" name="car" value="1" min="0" style="width:4.5em"></label><br>
-  <label><input type="checkbox" name="show_leg"> Show leg distance (participant)</label>
- </fieldset>
- <button class="go">Generate printable output</button>
- <button class="go" formaction="/export" formtarget="_self" title="A backup you can open in Excel or Google Sheets: every input plus formulas for all calculated values">Download spreadsheet (CSV with formulas)</button>
+   <span class="hint">Rally master clock and checkpoint times. Available when the output is Rally master.</span></div>
+  <div class="set" id="opt-leg"><label><input type="checkbox" name="show_leg"> Show leg distance</label>
+   <span class="hint">Adds a leg distance column. Available when the output is Participant.</span></div>
+ </details>
 </form>
 
 <script>
 // Help accordion: each section opens and closes on its own; these links do all of them
-function setAll(open) { document.querySelectorAll('#help details').forEach(d => { d.open = open; }); }
+function setAll(open) { document.querySelectorAll('#help details.sub').forEach(d => { d.open = open; }); }
 document.getElementById('expand-all').addEventListener('click', e => { e.preventDefault(); setAll(true); });
 document.getElementById('collapse-all').addEventListener('click', e => { e.preventDefault(); setAll(false); });
 const box = document.getElementById('data'), status = document.getElementById('status');
@@ -291,9 +311,31 @@ document.getElementById('save').addEventListener('click', () => {
   const head = headPairs().map(([k, v]) => k + ': ' + v);
   download(baseName() + '.txt', (head.length ? head.join('\n') + '\n\n' : '') + box.value, 'text/plain');
 });
+document.getElementById('save-sheet').addEventListener('click', () => {
+  headerFromBox();
+  const form = document.getElementById('route-form'), action = form.action, target = form.target;
+  form.action = '/export'; form.target = '_self';      // downloads a file, so the page stays put
+  form.submit();
+  form.action = action; form.target = target;
+  status.textContent = 'Preparing spreadsheet...';
+});
 document.getElementById('save-csv').addEventListener('click', () => {
   headerFromBox();
   // BOM so Excel reads the file as UTF-8
   download(baseName() + '.csv', '\uFEFF' + textToCsv(box.value, headPairs()), 'text/csv;charset=utf-8');
 });
+
+// Dim and disable the display options that do not apply to the chosen output type
+function syncOptions() {
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  const set = (id, on) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('dim', !on);
+    el.querySelectorAll('select,input').forEach(i => { i.disabled = !on; });
+  };
+  set('opt-resolution', mode === 'master');
+  set('opt-leg', mode === 'participant');
+}
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', syncOptions));
+syncOptions();
 </script></body></html>
