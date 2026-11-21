@@ -22,7 +22,7 @@ HEADERS = [
 HELP = [
     "Edit the input columns A-M (and B4 start time, B5 car number). Columns N onward are formulas and recalculate. Mileages are kept as entered; calculations round them to 0.01 mile.",
     "Type: SECTION, LINE, NOTE or OUTPOINT. Section: ODO, TRANSIT or RALLY. Checkpoint / Hide mileage: Y or blank.",
-    "Pause: seconds, or NEXTMIN for a Richta next-minute out. Speed: mph, applies from that line on (CAST).",
+    "Pause: seconds, or NEXTMIN for a next-minute out (Richta: Flying Start Next Minute). Speed: mph, applies from that line on (CAST).",
     "Out type (OUTPOINT rows): TOD (out clock + car number minutes), ASSIGNED, NEXTMIN, FIXED, or REL (minutes after previous section).",
     "Markup in text: **bold**, *italic*, and \\n for a new line. Columns O-S are display text; T-AE are the seconds-based helpers.",
 ]

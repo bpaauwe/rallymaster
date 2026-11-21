@@ -61,7 +61,7 @@
   <table class="ref">
    <tr><th>Field</th><th>What it does</th></tr>
    <tr><td>Speed (mph)</td><td>Applies from that mileage on. Printed in the instruction as <code>CAST 30</code>.</td></tr>
-   <tr><td>Pause</td><td>Seconds (<code>30</code>), <code>mm:ss</code>, or minutes (<code>2m</code>); printed as <code>Pause 30</code>. Or <code>NEXTMIN</code> for a Richta next-minute out: the car leaves at the next whole minute after it arrives (printed as <code>Next minute out</code>; the rally master sheet shows the out time).</td></tr>
+   <tr><td>Pause</td><td>Seconds (<code>30</code>), <code>mm:ss</code>, or minutes (<code>2m</code>); printed as <code>Pause 30</code>. Or <code>NEXTMIN</code> for a next-minute out (Richta checkpoint type: Flying Start Next Minute): the car leaves at the next whole minute after it arrives (printed as <code>Next minute out</code>; the rally master sheet shows the out time).</td></tr>
    <tr><td>Suffix</td><td>Extra text printed at the end of the instruction, after the pause and CAST &mdash; e.g. <code>FLR</code>. Shown to participants.</td></tr>
    <tr><td>General</td><td>Rally master only &mdash; never printed for participants. Put <code>CP</code> in it to make the line a checkpoint: it is highlighted and labeled CP on the master sheet (with its <b>CP time</b>: the time since the previous checkpoint, or since the start / out time for the first checkpoint after a start or transit zone), gets no instruction number, and is left off the participant sheet entirely (so don't put speeds, pauses or suffixes on it).</td></tr>
   </table>
@@ -72,7 +72,7 @@
    <tr><th>Out time</th><th>Meaning</th></tr>
    <tr><td><code>TOD 09:50</code></td><td>Time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52. Participants see <code>Out time 9:50 + car number</code>.</td></tr>
    <tr><td><code>ASSIGNED</code></td><td>Each car is given its out time. Participants see <code>Out time assigned</code>. Add a clock (<code>ASSIGNED 10:28</code>) to set the time the master sheet counts from.</td></tr>
-   <tr><td><code>NEXTMIN</code></td><td>Richta next minute out: the car goes out at the next whole minute after it arrives. Participants see <code>Next minute out</code>. Add the arrival time to assume for the master sheet (<code>NEXTMIN 10:12:50</code>).</td></tr>
+   <tr><td><code>NEXTMIN</code></td><td>Flying Start Next Minute (the Richta checkpoint type): the car goes out at the next whole minute after it arrives. Participants see <code>Next minute out</code>. Add the arrival time to assume for the master sheet (<code>NEXTMIN 10:12:50</code>).</td></tr>
    <tr><td>Older forms</td><td>A plain clock time (<code>09:51:00</code>) or <code>+20</code> (minutes after the section starts) also still work.</td></tr>
   </table>
   <p>Without a clock, <code>ASSIGNED</code> and <code>NEXTMIN</code> use the time the car left the previous timed section (or the Start time under Rally master times). The <b>Car number</b> under Rally master times sets which car the times are shown for.</p>

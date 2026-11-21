@@ -36,7 +36,7 @@ class Row:
     master_only: bool = False
     hide_mileage: bool = False   # mileage shown on rally master output only
     hide_leg: bool = False
-    next_min: bool = False       # Richta next-minute out: wait for the next whole minute
+    next_min: bool = False       # next-minute out (Richta: Flying Start Next Minute): wait for the next whole minute
     is_note: bool = False        # text-only line: no number, mileage, time, speed, pause or suffix
     is_out: bool = False         # out point that starts a timed leg
     out_kind: str = ""              # 'tod' | 'assigned' | 'nextmin' | 'fixed' | 'rel'
@@ -116,7 +116,7 @@ def parse_out_time(text: str):
       TOD 09:50       time of day plus car number: out time = 09:50 + car number (minutes)
                       (also written 'TOD + car number 09:50' or '09:50 + car')
       ASSIGNED [t]    out time is assigned to each car; optional t = clock for the master's times
-      NEXTMIN [t]     Richta next minute out: the next whole minute after arrival; optional t =
+      NEXTMIN [t]     Flying Start Next Minute (Richta): the next whole minute after arrival; optional t =
                       the arrival time to assume for the master's times
       09:51:00        fixed clock time for every car (older form)
       +20             minutes after the preceding section starts (older form)"""
@@ -318,7 +318,7 @@ def compute(segments, errors, start=0.0, car=0):
                 speed = r.speed
             elif speed is None:
                 errors.append(f"Line {r.line_no}: no speed set yet")
-            if r.next_min:                # Richta next-minute out: next whole minute after arrival
+            if r.next_min:                # Flying Start Next Minute: next whole minute after arrival
                 arr = _r(r.arrive_clock)
                 r.pause = ((arr // 60) + 1) * 60 - r.arrive_clock
             elapsed += r.pause

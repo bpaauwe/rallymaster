@@ -126,7 +126,8 @@
  <ul>
   <li><b>Location</b> (latitude and longitude). This is not part of the instructions. You can find it using Google Earth, or mark it during measurement using the Richta app.</li>
   <li><b>Perfect time</b> &mdash; this is the <b>CP time</b> column on the rally master sheet. The <b>Perfect time</b> and <b>Out time</b> columns on each line are not needed.</li>
- </ul></div>
+ </ul>
+ <p>A checkpoint timed since the previous checkpoint, the start or an out point &mdash; like the one above &mdash; is the Richta <b>Since last CP</b> checkpoint type. Out points map to other Richta checkpoint types; see <a href="#s8">step 8</a>.</p></div>
 <p><a class="btn" href="/?example=checkpoint" target="_blank">Open this route in the app</a></p>
 
 <h2 id="s8">8. Odometer check, out points and transit zones</h2>
@@ -152,7 +153,15 @@
 <p>The rally master sheet needs a clock time to count from. The <b>Start time</b> and <b>Car number</b> under <b>Rally master settings</b> supply it: for example with <code>TOD 09:50</code> and car number 1, the sheet is worked out from 09:51:00. For <code>ASSIGNED</code> and <code>NEXTMIN</code> you can add a clock after the word (<code>ASSIGNED 10:28</code>) to say what the sheet should count from.</p>
 {{ preview('sample_master','Rally master sheet for the sample route', 520) }}
 {{ preview('sample_participant','Participant sheet for the sample route', 520) }}
-<div class="richta"><span class="tag">Richta</span> The out point types (<code>TOD</code>, <code>ASSIGNED</code> and <code>NEXTMIN</code>) are related to the checkpoint types in Richta. As in step 7, for each checkpoint use its <b>CP time</b> &mdash; for the first checkpoint after an out point, the CP time counts from that out point.</div>
+<div class="richta"><span class="tag">Richta</span>
+ <p>The out point types and checkpoints in this app map to Richta checkpoint types like this:</p>
+ <table class="ref">
+  <tr><th>In this app</th><th>Richta checkpoint type</th></tr>
+  <tr><td>Out point with <code>TOD</code></td><td><b>CZT</b> &mdash; the Car Zero Time at the out point plus the car number.</td></tr>
+  <tr><td>Out point with <code>NEXTMIN</code></td><td><b>Flying Start Next Minute</b></td></tr>
+  <tr><td>Checkpoint (<code>CP</code> in the general field), timed since the previous checkpoint, the start or an out point. Its perfect time is the <b>CP time</b>.</td><td><b>Since last CP</b></td></tr>
+ </table>
+ <p>The location of each checkpoint (latitude and longitude) comes from Google Earth or the Richta app, as in <a href="#s7">step 7</a>.</p></div>
 <p><a class="btn" href="/?example=sample" target="_blank">Open the sample route in the app</a></p>
 
 <h2 id="s9">9. Measuring: the measure sheet</h2>
@@ -178,7 +187,7 @@
  <li>Fill in the title, subtitle and date, and check the <b>Rally master settings</b>.</li>
  <li>Generate and print the <b>Participant</b> sheet.</li>
  <li>Generate and print the <b>Rally master</b> sheet.</li>
- <li>For Richta: take each checkpoint's <b>CP time</b> from the rally master sheet, and its location from Google Earth or the Richta app.</li>
+ <li>For Richta: take each checkpoint's <b>CP time</b> from the rally master sheet and its location from Google Earth or the Richta app, and use the Richta checkpoint type shown in <a href="#s8">step 8</a>.</li>
  <li>Save the route (and the spreadsheet if you want a backup).</li>
 </ol>
 <p><a href="/">&larr; Back to the app</a></p>
