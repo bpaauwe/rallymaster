@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Tutorial - TSD Rally Instruction Generator</title>
+<html lang="en"><head><meta charset="utf-8"><title>Tutorial - TSD Route Sheets</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
  :root{color-scheme:light dark}
@@ -142,15 +142,14 @@
 <p>Instruction numbers carry on through all the sections. Out points are labeled <b>OUT</b> and don't use a number.</p>
 <h3>Out points</h3>
 <pre class="code">OUTPOINT | mileage | instruction | out time | speed | suffix | general</pre>
-<p>The out point's <b>speed</b> is the speed for the first leg after it. The <b>out time</b> is one of three types, and participants are shown the matching wording automatically:</p>
+<p>The out point's <b>speed</b> is the speed for the first leg after it. The <b>out time</b> is one of two types, and participants are shown the matching wording automatically:</p>
 <table class="ref">
  <tr><th>Out time</th><th>Meaning</th><th>Participants see</th></tr>
  <tr><td><code>TOD 09:50</code></td><td>Time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52.</td><td>Out time 9:50 + car number</td></tr>
- <tr><td><code>ASSIGNED</code></td><td>Each car is given its out time.</td><td>Out time assigned</td></tr>
  <tr><td><code>NEXTMIN</code></td><td>The car goes out at the next whole minute after it arrives.</td><td>Next minute out</td></tr>
 </table>
 <p>You can also put <code>NEXTMIN</code> in the <b>pause</b> field of an ordinary rally line for a next-minute out partway through a leg.</p>
-<p>The rally master sheet needs a clock time to count from. The <b>Start time</b> and <b>Car number</b> under <b>Rally master settings</b> supply it: for example with <code>TOD 09:50</code> and car number 1, the sheet is worked out from 09:51:00. For <code>ASSIGNED</code> and <code>NEXTMIN</code> you can add a clock after the word (<code>ASSIGNED 10:28</code>) to say what the sheet should count from.</p>
+<p>The rally master sheet needs a clock time to count from. The <b>Start time</b> and <b>Car number</b> under <b>Rally master settings</b> supply it: for example with <code>TOD 09:50</code> and car number 1, the sheet is worked out from 09:51:00. For <code>NEXTMIN</code> you can add the arrival time to assume after the word (<code>NEXTMIN 10:12:50</code>); without it the sheet uses the time the car left the previous timed section.</p>
 {{ preview('sample_master','Rally master sheet for the sample route', 520) }}
 {{ preview('sample_participant','Participant sheet for the sample route', 520) }}
 <div class="richta"><span class="tag">Richta</span>
