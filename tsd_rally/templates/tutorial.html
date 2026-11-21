@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Tutorial - TSD Rally Instruction Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+ :root{color-scheme:light dark}
+ body{font-family:system-ui,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;line-height:1.5}
+ h1{font-size:1.6rem;margin:.4rem 0} h2{font-size:1.25rem;margin:2.2rem 0 .4rem;border-bottom:2px solid #8886;padding-bottom:.2rem}
+ h3{font-size:1.05rem;margin:1.2rem 0 .3rem}
+ code{font-family:ui-monospace,monospace;background:#8882;padding:0 .25em;border-radius:3px}
+ pre.code{background:#8881;border:1px solid #8886;border-radius:6px;padding:.7rem .9rem;overflow-x:auto;font-size:13.5px;line-height:1.4}
+ table.ref{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:14px}
+ table.ref th,table.ref td{border:1px solid #8886;padding:4px 8px;text-align:left;vertical-align:top}
+ .btn{display:inline-block;padding:.35rem .8rem;border:1px solid #8886;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px}
+ .toc{background:#8881;border:1px solid #8886;border-radius:6px;padding:.4rem 1.2rem;margin:1rem 0} .toc ol{margin:.3rem 0;padding-left:1.2rem}
+ .richta{border-left:5px solid #c2410c;background:#c2410c1a;padding:.6rem .9rem;margin:1rem 0;border-radius:0 6px 6px 0}
+ .richta .tag{display:inline-block;background:#c2410c;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:0 .5em;border-radius:3px;margin-right:.4rem}
+ .richta p{margin:.4rem 0} .richta ul{margin:.3rem 0;padding-left:1.3rem}
+ figure.preview{margin:1rem 0} figure.preview figcaption{font-size:13px;opacity:.75;margin-bottom:.2rem}
+ figure.preview iframe{width:100%;border:1px solid #8886;border-radius:6px;background:#fff}
+ .tip{opacity:.8;font-size:14px}
+</style></head><body>
+{% macro preview(key, caption, h=330) %}
+<figure class="preview"><figcaption>{{ caption }}</figcaption>
+ <iframe srcdoc="{{ previews[key] }}" style="height:{{ h }}px" title="{{ caption }}"></iframe></figure>
+{% endmacro %}
+
+<p><a href="/">&larr; Back to the app</a></p>
+<h1>Tutorial: from a route to participant and rally master instructions</h1>
+<p>This walks you through taking a simple route &mdash; a start, turn-by-turn instructions and a finish &mdash; typing it into the app, and producing a printable set of participant instructions and rally master instructions. It then adds speeds, pauses, checkpoints, out points and transit zones using the sample route. The sheets shown on this page are produced by the app itself from the routes printed here. Wherever you see an orange <span class="richta" style="padding:0 .4em;border-left-width:3px"><span class="tag" style="margin:0">Richta</span></span> box, it explains what to take from the rally master sheet for a Richta event.</p>
+
+<nav class="toc"><b>Steps</b><ol>
+ <li><a href="#s1">What you need</a></li>
+ <li><a href="#s2">Enter a simple route</a></li>
+ <li><a href="#s3">Fill in the title area</a></li>
+ <li><a href="#s4">Generate the participant instructions</a></li>
+ <li><a href="#s5">Generate the rally master instructions</a></li>
+ <li><a href="#s6">Speed changes, pauses, notes and text styling</a></li>
+ <li><a href="#s7">Checkpoints</a></li>
+ <li><a href="#s8">Odometer check, out points and transit zones</a></li>
+ <li><a href="#s9">Measuring: the measure sheet</a></li>
+ <li><a href="#s10">Save your work</a></li>
+</ol></nav>
+
+<h2 id="s1">1. What you need</h2>
+<ul>
+ <li>Your route as a list of instructions in order: the start, each turn or landmark, and the finish.</li>
+ <li>A mileage for each instruction. Enter mileages to the nearest 1/1000 mile if you measure that finely; the sheets show and calculate with the value rounded to 1/100 mile. What you type is never changed.</li>
+ <li>The speed for the first leg. A speed stays in effect until a later line gives a new one.</li>
+ <li>A start time for the rally master sheet (set in <b>Rally master settings</b>).</li>
+</ul>
+<p class="tip">Haven't measured the route yet? Mileages can be left blank &mdash; see <a href="#s9">step 9</a>.</p>
+
+<h2 id="s2">2. Enter a simple route</h2>
+<p>Type or paste the route into the large text box, one instruction per line, with the fields separated by <code>|</code>:</p>
+<pre class="code">mileage | instruction | speed | pause | suffix | general</pre>
+<p>Only the mileage and instruction are needed on most lines; trailing fields can be left off. Here is a simple route:</p>
+<pre class="code">{{ ex.simple }}</pre>
+<ul>
+ <li><b>0.00 | START ... | 30</b> &mdash; the mileage, the instruction, and a speed of 30 mph. The first line needs a speed so the app can work out times.</li>
+ <li><b>1.20 | Left at stop sign onto Oak Rd</b> &mdash; just a mileage and an instruction. The speed stays at 30 until a line gives a new one.</li>
+ <li><b>12.00 | FINISH</b> &mdash; the finish is an ordinary line.</li>
+</ul>
+<p><a class="btn" href="/?example=simple" target="_blank">Open this route in the app</a></p>
+
+<h2 id="s3">3. Fill in the title area</h2>
+<p>Under the text box, enter a <b>Title</b>, an optional <b>Subtitle</b> and the <b>Date</b>. They are printed at the top of every sheet; the title, sheet type and date are also printed in the page footer. You can also put them in the file itself with header lines (<code>Title: ...</code>, <code>Subtitle: ...</code>, <code>Date: 2026-11-21</code>, <code>Start time: 09:30:00</code>); they fill in these fields when a file is loaded.</p>
+<p>The <b>Output</b> row has three choices: <b>Participant</b>, <b>Rally master</b> and <b>Measure</b>. The next steps use each in turn.</p>
+
+<h2 id="s4">4. Generate the participant instructions</h2>
+<p>Choose <b>Participant</b> and click <b>Generate printable output</b>. The sheet opens in a new browser tab.</p>
+{{ preview('simple_participant','Participant sheet for the simple route') }}
+<ul>
+ <li><b>#</b> is the instruction number, then the <b>Mileage</b> and the <b>Instruction</b>.</li>
+ <li>The speed you entered is added to the end of the instruction as <b>CAST 30</b> (change average speed to).</li>
+ <li>When printed, the type is large and high-contrast with extra space around each row, so it can be read in a moving vehicle.</li>
+</ul>
+<p>Click <b>Print</b> at the top of the sheet (the button itself doesn't print). Page numbers appear in the footer in Chrome and Edge (version 131 or newer); in other browsers turn on &ldquo;Headers and footers&rdquo; in the print dialog.</p>
+
+<h2 id="s5">5. Generate the rally master instructions</h2>
+<p>Open <b>Rally master settings</b> under the Output row and check the <b>Start time</b> (09:30:00 here). Because this route has no out point, the times count from the start time. Choose <b>Rally master</b> and click <b>Generate printable output</b>.</p>
+{{ preview('simple_master','Rally master sheet for the simple route', 360) }}
+<table class="ref">
+ <tr><th>Column</th><th>What it shows</th></tr>
+ <tr><td>Leg</td><td>Distance from the previous instruction.</td></tr>
+ <tr><td>Time to instr.</td><td>Time from the previous instruction to this one at the speed in effect.</td></tr>
+ <tr><td>Elapsed</td><td>Total time since the start (or since the last out point).</td></tr>
+ <tr><td>Perfect time</td><td>The clock time at this instruction.</td></tr>
+ <tr><td>Out time</td><td>When the car leaves, shown only on lines with a pause or a next-minute out.</td></tr>
+ <tr><td>CP time</td><td>Checkpoints only &mdash; see <a href="#s7">step 7</a>.</td></tr>
+ <tr><td>Notes</td><td>The <b>general</b> field of each line (rally master notes).</td></tr>
+</table>
+<p>In <b>Rally master settings</b> you can also change the <b>Time resolution</b> from seconds to decimal minutes (1/100 of a minute). Clock times then show as hh:mm.hh and durations as decimal minutes.</p>
+<div class="richta"><span class="tag">Richta</span> Of the columns on this sheet, the one you need for Richta is <b>CP time</b>. The <b>Perfect time</b> and <b>Out time</b> columns on each line are not needed.</div>
+
+<h2 id="s6">6. Speed changes, pauses, notes and text styling</h2>
+<p>The same route with more of the app's features:</p>
+<pre class="code">{{ ex.extras }}</pre>
+<table class="ref">
+ <tr><th>What you typed</th><th>What happens</th></tr>
+ <tr><td><code>... | 35</code> (speed)</td><td>The new speed applies from that mileage on and is printed as <b>CAST 35</b>.</td></tr>
+ <tr><td><code>... | 25 | 30</code> (speed, pause)</td><td>A pause of 30 seconds is printed as <b>Pause 30</b>, and the rally master times allow for it. A pause can also be <code>mm:ss</code> or <code>2m</code>.</td></tr>
+ <tr><td><code>| | | FLR</code> (suffix)</td><td>Text added to the end of the instruction, after any pause and CAST. Participants see it.</td></tr>
+ <tr><td><code>| | | | | Secret check: ...</code> (general)</td><td>A note for the rally master only. It appears in the Notes column and never on the participant sheet.</td></tr>
+ <tr><td><code>NOTE | text</code></td><td>Text in the instruction column with no number, mileage or time.</td></tr>
+ <tr><td><code>**word**</code> &nbsp; <code>*word*</code></td><td>Bold and italic text.</td></tr>
+ <tr><td><code>\n</code> in an instruction</td><td>Starts a new line (use it twice for a blank line).</td></tr>
+ <tr><td><code>@4.20</code> (before a mileage)</td><td>Shows that mileage only on the rally master sheet.</td></tr>
+</table>
+{{ preview('extras_participant','Participant sheet for the route with extras', 400) }}
+<p class="tip">The Help section on the main page has the full reference for every field and marker.</p>
+<p><a class="btn" href="/?example=extras" target="_blank">Open this route in the app</a></p>
+
+<h2 id="s7">7. Checkpoints</h2>
+<p>A checkpoint is a line with <code>CP</code> in the <b>general</b> field (the last field). Give it its own line, with the instruction text you want the rally master to see and no speed, pause or suffix (participants never see checkpoint lines, so those would not be printed for them):</p>
+<pre class="code">8.40 | Checkpoint 1 | | | | CP 1</pre>
+<p>This line is added after <code>7.80</code> in the route below.</p>
+<pre class="code">{{ ex.checkpoint }}</pre>
+{{ preview('checkpoint_master','Rally master sheet: the checkpoint is highlighted and shows its CP time', 420) }}
+<ul>
+ <li>On the rally master sheet the checkpoint is highlighted, its <b>#</b> column says <b>CP</b> instead of a number, and its <b>CP time</b> is filled in.</li>
+ <li><b>CP time</b> is the time since the previous checkpoint &mdash; or, for the first checkpoint after the start or an out point, the time since that start or out time. Here CP 1 shows <b>{{ facts.cp_time }}</b> (<b>{{ facts.cp_time_dec }}</b> in decimal minutes).</li>
+</ul>
+{{ preview('checkpoint_participant','Participant sheet: the checkpoint is left out and the numbers carry on', 400) }}
+<div class="richta"><span class="tag">Richta</span>
+ <p>When you enter a checkpoint in Richta you need two things:</p>
+ <ul>
+  <li><b>Location</b> (latitude and longitude). This is not part of the instructions. You can find it using Google Earth, or mark it during measurement using the Richta app.</li>
+  <li><b>Perfect time</b> &mdash; this is the <b>CP time</b> column on the rally master sheet. The <b>Perfect time</b> and <b>Out time</b> columns on each line are not needed.</li>
+ </ul></div>
+<p><a class="btn" href="/?example=checkpoint" target="_blank">Open this route in the app</a></p>
+
+<h2 id="s8">8. Odometer check, out points and transit zones</h2>
+<p>The sample route that opens when you start the app uses the rest of the features. Here it is:</p>
+<pre class="code">{{ ex.sample }}</pre>
+<h3>Sections</h3>
+<ul>
+ <li><code>[ODOMETER CHECK]</code> &mdash; instructions with no speeds, no timing and no checkpoints. It ends with an <code>OUTPOINT</code> line.</li>
+ <li><code>[RALLY]</code> &mdash; the timed instructions (lines with no section header are rally lines).</li>
+ <li><code>[TRANSIT]</code> &mdash; a section that is not timed and has no checkpoints, ending with an <code>OUTPOINT</code> line. Timing restarts at that out point.</li>
+</ul>
+<p>Instruction numbers carry on through all the sections. Out points are labeled <b>OUT</b> and don't use a number.</p>
+<h3>Out points</h3>
+<pre class="code">OUTPOINT | mileage | instruction | out time | speed | suffix | general</pre>
+<p>The out point's <b>speed</b> is the speed for the first leg after it. The <b>out time</b> is one of three types, and participants are shown the matching wording automatically:</p>
+<table class="ref">
+ <tr><th>Out time</th><th>Meaning</th><th>Participants see</th></tr>
+ <tr><td><code>TOD 09:50</code></td><td>Time of day plus car number: car 1 goes out at 09:51, car 2 at 09:52.</td><td>Out time 9:50 + car number</td></tr>
+ <tr><td><code>ASSIGNED</code></td><td>Each car is given its out time.</td><td>Out time assigned</td></tr>
+ <tr><td><code>NEXTMIN</code></td><td>The car goes out at the next whole minute after it arrives.</td><td>Next minute out</td></tr>
+</table>
+<p>You can also put <code>NEXTMIN</code> in the <b>pause</b> field of an ordinary rally line for a next-minute out partway through a leg.</p>
+<p>The rally master sheet needs a clock time to count from. The <b>Start time</b> and <b>Car number</b> under <b>Rally master settings</b> supply it: for example with <code>TOD 09:50</code> and car number 1, the sheet is worked out from 09:51:00. For <code>ASSIGNED</code> and <code>NEXTMIN</code> you can add a clock after the word (<code>ASSIGNED 10:28</code>) to say what the sheet should count from.</p>
+{{ preview('sample_master','Rally master sheet for the sample route', 520) }}
+{{ preview('sample_participant','Participant sheet for the sample route', 520) }}
+<div class="richta"><span class="tag">Richta</span> The out point types (<code>TOD</code>, <code>ASSIGNED</code> and <code>NEXTMIN</code>) are related to the checkpoint types in Richta. As in step 7, for each checkpoint use its <b>CP time</b> &mdash; for the first checkpoint after an out point, the CP time counts from that out point.</div>
+<p><a class="btn" href="/?example=sample" target="_blank">Open the sample route in the app</a></p>
+
+<h2 id="s9">9. Measuring: the measure sheet</h2>
+<p>If the mileages aren't known yet, leave them blank and use the <b>Measure</b> output. It shows every line &mdash; checkpoints, notes and master-only mileages included &mdash; in the participant layout, with an empty mileage cell to write in. It does no calculations, and blank mileages are not an error here.</p>
+<pre class="code">{{ ex.measure }}</pre>
+{{ preview('measure_sheet','Measure sheet: blank mileage cells to fill in', 380) }}
+<p>When you have the measured mileages, type them in and generate the participant and rally master sheets (both need the mileages).</p>
+<div class="richta"><span class="tag">Richta</span> A checkpoint's location can be marked during measurement using the Richta app (or found using Google Earth).</div>
+<p><a class="btn" href="/?example=measure" target="_blank">Open this route in the app</a></p>
+
+<h2 id="s10">10. Save your work</h2>
+<p>Above the text box, <b>Save</b> has three options:</p>
+<ul>
+ <li><b>Text file</b> &mdash; your route exactly as typed, plus the title, subtitle, date and start time as header lines. Load it again with <b>Load file</b>.</li>
+ <li><b>CSV</b> &mdash; the same route as a CSV file you can open in a spreadsheet program. Loading a CSV with the columns <code>mileage, instruction, speed, pause, suffix, general</code> converts it back.</li>
+ <li><b>Spreadsheet with formulas</b> &mdash; a CSV with every input plus formulas for the instruction text, perfect times, out times and checkpoint times. Open it in Excel or Google Sheets, change a mileage, speed or pause (or the start time or car number at the top), and everything recalculates.</li>
+</ul>
+<p>Mileages are saved exactly as you entered them.</p>
+
+<h3>Checklist</h3>
+<ol>
+ <li>Enter the route (mileage, instruction, speed on the first line), and add checkpoints with <code>CP</code> in the general field.</li>
+ <li>Fill in the title, subtitle and date, and check the <b>Rally master settings</b>.</li>
+ <li>Generate and print the <b>Participant</b> sheet.</li>
+ <li>Generate and print the <b>Rally master</b> sheet.</li>
+ <li>For Richta: take each checkpoint's <b>CP time</b> from the rally master sheet, and its location from Google Earth or the Richta app.</li>
+ <li>Save the route (and the spreadsheet if you want a backup).</li>
+</ol>
+<p><a href="/">&larr; Back to the app</a></p>
+</body></html>

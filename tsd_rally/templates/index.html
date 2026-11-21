@@ -4,7 +4,9 @@
 <style>
  :root{color-scheme:light dark}
  body{font-family:system-ui,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;line-height:1.4}
- h1{margin:0 0 .6rem;font-size:1.5rem}
+ h1{margin:0;font-size:1.5rem}
+ .top{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 .6rem}
+ .tut{font-weight:600}
  details.acc{border:1px solid #8886;border-radius:6px;margin:.4rem 0}
  details.acc>summary{cursor:pointer;font-weight:600;padding:.5rem .9rem;list-style:none;user-select:none}
  details.acc>summary::-webkit-details-marker{display:none}
@@ -36,7 +38,7 @@
  button{padding:.45rem 1rem;font-size:.95rem;cursor:pointer}
  button.go{padding:.7rem 1.6rem;font-size:1.05rem}
 </style></head><body>
-<h1>TSD Rally Instruction Generator</h1>
+<div class="top"><h1>TSD Rally Instruction Generator</h1><a class="tut" href="/tutorial" target="_blank">Tutorial</a></div>
 
 <details class="acc" id="help"><summary>Help and format reference</summary>
  <div class="help-links"><a href="#" id="expand-all">Expand all</a> &middot; <a href="#" id="collapse-all">Collapse all</a></div>
@@ -118,8 +120,8 @@
  <textarea name="data" id="data" spellcheck="false">{{ sample }}</textarea>
 
  <div class="row">
-  <label>Title <input name="title" id="title" value="My TSD Rally" size="24"></label>
-  <label>Subtitle <input name="subtitle" id="subtitle" value="Autumn Classic - Route 2" size="24" placeholder="(optional)"></label>
+  <label>Title <input name="title" id="title" value="{{ form.title }}" size="24"></label>
+  <label>Subtitle <input name="subtitle" id="subtitle" value="{{ form.subtitle }}" size="24" placeholder="(optional)"></label>
   <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
  </div>
 
@@ -133,7 +135,7 @@
 
  <details class="acc" id="master-settings"><summary>Rally master settings</summary>
   <p class="hint">Used by the rally master sheet and the spreadsheet download. The participant and measure sheets show no clock times.</p>
-  <div class="set"><label>Start time <input type="time" step="1" name="start_time" id="start_time" value="09:30:00"></label>
+  <div class="set"><label>Start time <input type="time" step="1" name="start_time" id="start_time" value="{{ form.start_time }}"></label>
    <span class="hint">The clock the times count from when the route has no OUTPOINT, and where an ASSIGNED or NEXTMIN out point with no clock starts from.</span></div>
   <div class="set"><label>Car number <input type="number" name="car" id="car" value="1" min="0" style="width:4.5em"></label>
    <span class="hint">The car the times are worked out for. It only matters for out points written as <code>TOD</code> (out time = time of day + car number minutes): with <code>TOD 09:50</code>, car 1 goes out at 09:51 and car 2 at 09:52.</span></div>

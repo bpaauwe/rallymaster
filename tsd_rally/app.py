@@ -75,9 +75,73 @@ OUTPOINT | 18.00 | Out point: Fire Station | ASSIGNED 10:28 | 35
 """
 
 
+SIMPLE = r"""0.00 | START: Leave parking lot, turn right on Main St | 30
+1.20 | Left at stop sign onto Oak Rd
+3.45 | Right at T onto County Rd 5
+5.10 | Pass red barn on right
+7.80 | Left at Y
+9.50 | Straight at 4-way
+12.00 | FINISH
+"""
+
+EXTRAS = r"""0.00 | START: Leave parking lot, turn right on Main St | 30
+1.20 | **Left** at stop sign onto **Oak Rd** | | | FLR
+3.45 | Right at T onto County Rd 5 | 35
+NOTE | Watch for farm equipment on the road.
+5.10 | Pass red barn on right | | | | Secret check: barn number
+7.80 | Left at Y | 25 | 30
+9.50 | Straight at 4-way.\nSpeed zone ahead - watch for signs | 40
+12.00 | FINISH
+"""
+
+CHECKPOINT = EXTRAS.replace("9.50 | Straight", "8.40 | Checkpoint 1 | | | | CP 1\n9.50 | Straight")
+
+MEASURE = r""" | START: Leave parking lot, turn right on Main St | 30
+ | Left at stop sign onto Oak Rd
+ | Right at T onto County Rd 5 | 35
+ | Pass red barn on right
+ | Left at Y | 25 | 30
+ | Checkpoint 1 | | | | CP 1
+ | Straight at 4-way
+ | FINISH
+"""
+
+# Example routes: used by the tutorial and by /?example=name (which fills the form with them)
+EXAMPLES = {
+    "sample": {"text": SAMPLE, "title": "My TSD Rally", "subtitle": "Autumn Classic - Route 2", "start_time": "09:30:00"},
+    "simple": {"text": SIMPLE, "title": "Simple Route", "subtitle": "Tutorial example", "start_time": "09:30:00"},
+    "extras": {"text": EXTRAS, "title": "Simple Route", "subtitle": "Tutorial example", "start_time": "09:30:00"},
+    "checkpoint": {"text": CHECKPOINT, "title": "Simple Route", "subtitle": "Tutorial example", "start_time": "09:30:00"},
+    "measure": {"text": MEASURE, "title": "Simple Route", "subtitle": "Tutorial example", "start_time": "09:30:00"},
+}
+
+
 @app.route("/")
 def index():
-    return render_template("index.html", sample=SAMPLE, today=date.today().isoformat())
+    ex = EXAMPLES.get(request.args.get("example", ""), EXAMPLES["sample"])
+    return render_template("index.html", sample=ex["text"], today=date.today().isoformat(), form=ex)
+
+
+@app.route("/tutorial")
+def tutorial():
+    def preview(name, mode):
+        e = EXAMPLES[name]
+        return render_output({"data": e["text"], "mode": mode, "title": e["title"], "subtitle": e["subtitle"],
+                              "start_time": e["start_time"], "car": "1"}, preview=True)
+
+    segs, errs = tsd.parse_input(CHECKPOINT)
+    tsd.compute(segs, errs, tsd.parse_clock("09:30:00"), 1)
+    cp = next(r for s in segs for r in s.rows if r.is_cp)
+    facts = {"cp_time": tsd.fmt_ms(cp.cp_sec), "cp_time_dec": tsd.fmt_ms(cp.cp_sec, True)}
+    previews = {
+        "simple_participant": preview("simple", "participant"), "simple_master": preview("simple", "master"),
+        "extras_participant": preview("extras", "participant"),
+        "checkpoint_master": preview("checkpoint", "master"), "checkpoint_participant": preview("checkpoint", "participant"),
+        "sample_master": preview("sample", "master"), "sample_participant": preview("sample", "participant"),
+        "measure_sheet": preview("measure", "measure"),
+    }
+    return render_template("tutorial.html", ex={k: v["text"] for k, v in EXAMPLES.items()},
+                           previews=previews, facts=facts)
 
 
 def read_settings(f, errors):
@@ -116,7 +180,12 @@ def export_csv():
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    f = request.form
+    return render_output(request.form)
+
+
+def render_output(f, preview=False):
+    """Build a printable sheet from form-like data (a dict works). preview=True hides the
+    Print button so the sheet can be embedded in the tutorial."""
     mode = f.get("mode", "participant")
     decimal = f.get("resolution") in ("decimal", "minute")   # decimal minutes (1/100 min)
     header_errors = []
@@ -175,7 +244,7 @@ def generate():
         vis = [r for r in seg.rows if not r.is_cp and not r.is_note and r.mileage is not None]
         for i, r in enumerate(vis if mode != "measure" else []):
             if i > 0:
-                r.leg_vis = max(r.mileage - vis[i - 1].mileage, 0)
+                r.leg_vis = round(max(r.mileage - vis[i - 1].mileage, 0), 2)
                 r.hide_leg = r.hide_mileage or vis[i - 1].hide_mileage
 
     title = meta.get("title", f.get("title", "Rally"))
@@ -186,7 +255,7 @@ def generate():
         title=title, date_text=date_text,
         subtitle=meta.get("subtitle", f.get("subtitle", "")).strip(),
         footer_left=css_text(f"{title} - {label}"), footer_right=css_text(date_text),
-        show_leg=bool(f.get("show_leg")),
+        show_leg=bool(f.get("show_leg")), preview=preview,
         clock=lambda t: tsd.fmt_clock(t, decimal), elapsed=lambda s: tsd.fmt_elapsed(s, decimal),
         cptime=lambda s: tsd.fmt_ms(s, decimal), decimal=decimal,
     )

@@ -52,8 +52,8 @@
 {% macro lines(r) %}{% for l in r.lines %}<div{% if not l %} class="gap"{% endif %}>{{ l }}</div>{% endfor %}{% endmacro %}
 {% macro mile(r) %}{% if r.is_note or r.mileage is none %}{% elif r.hide_mileage and mode == 'participant' %}{% else %}{{ '%.2f' % r.mileage }}{% if r.hide_mileage %}*{% endif %}{% endif %}{% endmacro %}
 
-<div class="noprint"><button onclick="print()">Print</button>
- <small>Page numbers print in the footer in Chrome and Edge (v131+). In other browsers, turn on &ldquo;Headers and footers&rdquo; in the print dialog. If you get two sets of page numbers, turn that option off.</small></div>
+{% if not preview %}<div class="noprint"><button onclick="print()">Print</button>
+ <small>Page numbers print in the footer in Chrome and Edge (v131+). In other browsers, turn on &ldquo;Headers and footers&rdquo; in the print dialog. If you get two sets of page numbers, turn that option off.</small></div>{% endif %}
 <header class="title-area">
  <h1>{{ title }}</h1>
  {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
