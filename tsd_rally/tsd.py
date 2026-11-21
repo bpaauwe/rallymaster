@@ -313,13 +313,20 @@ def compute(segments, errors, start=0.0, car=0):
     return segments, errors
 
 
-def fmt_clock(t: float, whole_minutes=False) -> str:
+def _hundredths(sec: float) -> int:
+    """Seconds -> hundredths of a minute (1/100 min = 0.6 s), rounded half up."""
+    return _r(sec * 100 / 60)
+
+
+def fmt_clock(t: float, decimal=False) -> str:
+    """Clock time: hh:mm:ss, or hh:mm.hh with decimal minutes (hundredths of a minute)."""
+    if decimal:
+        v = _hundredths(t) % 144000            # hundredths of a minute in a day
+        return f"{v // 6000:02d}:{(v // 100) % 60:02d}.{v % 100:02d}"
     t = _r(t) % 86400
-    if whole_minutes:
-        t = _r(t / 60) * 60 % 86400
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
-    return f"{h:02d}:{m:02d}" if whole_minutes else f"{h:02d}:{m:02d}:{s:02d}"
+    return f"{h:02d}:{m:02d}:{s:02d}"
 
 
 def fmt_tod(sec: float) -> str:
@@ -329,15 +336,19 @@ def fmt_tod(sec: float) -> str:
     return f"{h}:{m:02d}" + (f":{s:02d}" if s else "")
 
 
-def fmt_ms(sec: float, whole_minutes=False) -> str:
-    """Duration for checkpoint legs: '20:00' (min:sec) or '20 min'."""
-    if whole_minutes:
-        return f"{_r(sec / 60)} min"
+def fmt_ms(sec: float, decimal=False) -> str:
+    """Duration for checkpoint legs: '20:00' (min:sec) or '20.00' (decimal minutes)."""
+    if decimal:
+        v = _hundredths(sec)
+        return f"{v // 100}.{v % 100:02d}"
     m, s = divmod(_r(sec), 60)
     return f"{m}:{s:02d}"
 
 
-def fmt_elapsed(sec: float) -> str:
+def fmt_elapsed(sec: float, decimal=False) -> str:
+    """Duration: h:mm:ss, or decimal minutes ('9.73')."""
+    if decimal:
+        return fmt_ms(sec, True)
     t = _r(sec)
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)

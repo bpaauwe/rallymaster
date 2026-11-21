@@ -137,8 +137,8 @@
   <div class="set"><label>Car number <input type="number" name="car" id="car" value="1" min="0" style="width:4.5em"></label>
    <span class="hint">The car the times are worked out for. It only matters for out points written as <code>TOD</code> (out time = time of day + car number minutes): with <code>TOD 09:50</code>, car 1 goes out at 09:51 and car 2 at 09:52.</span></div>
   <div class="set" id="opt-resolution"><label>Time resolution
-   <select name="resolution"><option value="second">Seconds</option><option value="minute">Whole minutes</option></select></label>
-   <span class="hint">Rally master clock and checkpoint times. Available when the output is Rally master.</span></div>
+   <select name="resolution"><option value="second">Seconds</option><option value="decimal">Decimal minutes (1/100 min)</option></select></label>
+   <span class="hint">Rally master times as hh:mm:ss, or as hh:mm.hh with durations in decimal minutes (1/100 of a minute). Available when the output is Rally master.</span></div>
   <div class="set" id="opt-leg"><label><input type="checkbox" name="show_leg"> Show leg distance</label>
    <span class="hint">Adds a leg distance column. Available when the output is Participant.</span></div>
  </details>

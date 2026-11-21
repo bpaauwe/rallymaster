@@ -118,7 +118,7 @@ def export_csv():
 def generate():
     f = request.form
     mode = f.get("mode", "participant")
-    whole_min = f.get("resolution") == "minute"
+    decimal = f.get("resolution") in ("decimal", "minute")   # decimal minutes (1/100 min)
     header_errors = []
     text, meta, start, car = read_settings(f, header_errors)
     segments, errors = tsd.parse_input(text)
@@ -156,7 +156,7 @@ def generate():
             elif o.out_kind == "assigned":
                 seg.out_note = "assigned to each car; times are shown from this reference"
             elif o.out_kind == "nextmin":
-                seg.out_note = "next minute after arrival; times assume arrival at " + tsd.fmt_clock(seg.out_arrival, whole_min)
+                seg.out_note = "next minute after arrival; times assume arrival at " + tsd.fmt_clock(seg.out_arrival, decimal)
     n = 0
     for seg in segments:
         for r in seg.rows:   # instruction numbers run on through every section; CPs get none
@@ -187,8 +187,8 @@ def generate():
         subtitle=meta.get("subtitle", f.get("subtitle", "")).strip(),
         footer_left=css_text(f"{title} - {label}"), footer_right=css_text(date_text),
         show_leg=bool(f.get("show_leg")),
-        clock=lambda t: tsd.fmt_clock(t, whole_min), elapsed=tsd.fmt_elapsed,
-        cptime=lambda s: tsd.fmt_ms(s, whole_min),
+        clock=lambda t: tsd.fmt_clock(t, decimal), elapsed=lambda s: tsd.fmt_elapsed(s, decimal),
+        cptime=lambda s: tsd.fmt_ms(s, decimal), decimal=decimal,
     )
 
 
