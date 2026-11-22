@@ -96,6 +96,7 @@
    <tr><td>Measure</td><td>Every line in the participant layout, with blank mileage cells to write in. No calculations.</td></tr>
   </table>
   <p>Page numbers print in the footer in Chrome and Edge (v131+); in other browsers turn on &ldquo;Headers and footers&rdquo; in the print dialog.</p>
+  <p><b>Download PDF</b> (next to Generate, and at the top of each sheet) saves the same sheet as a PDF on US Letter paper, with its own &ldquo;Page 1 of 3&rdquo; footer in any browser.</p>
  </details>
 
  <details class="acc sub"><summary>Files, header and spreadsheet backup</summary>
@@ -130,6 +131,7 @@
   <label title="Every line, with perfect times, out times and checkpoint times."><input type="radio" name="mode" value="master"> Rally master</label>
   <label title="Every line in the participant layout with blank mileage cells to write in. No calculations."><input type="radio" name="mode" value="measure"> Measure</label>
   <button class="go">Generate printable output</button>
+  <button type="button" class="go" id="pdf-btn" title="Download the sheet as a PDF with the same layout as the print output">Download PDF</button>
  </div>
 
  <details class="acc" id="master-settings"><summary>Rally master settings</summary>
@@ -313,13 +315,19 @@ document.getElementById('save').addEventListener('click', () => {
   const head = headPairs().map(([k, v]) => k + ': ' + v);
   download(baseName() + '.txt', (head.length ? head.join('\n') + '\n\n' : '') + box.value, 'text/plain');
 });
-document.getElementById('save-sheet').addEventListener('click', () => {
+// Send the form somewhere else (a file download), leaving this page where it is
+function submitTo(action) {
   headerFromBox();
-  const form = document.getElementById('route-form'), action = form.action, target = form.target;
-  form.action = '/export'; form.target = '_self';      // downloads a file, so the page stays put
+  const form = document.getElementById('route-form'), oldAction = form.action, oldTarget = form.target;
+  form.action = action; form.target = '_self';
   form.submit();
-  form.action = action; form.target = target;
-  status.textContent = 'Preparing spreadsheet...';
+  form.action = oldAction; form.target = oldTarget;
+}
+document.getElementById('save-sheet').addEventListener('click', () => {
+  submitTo('/export'); status.textContent = 'Preparing spreadsheet...';
+});
+document.getElementById('pdf-btn').addEventListener('click', () => {
+  submitTo('/pdf'); status.textContent = 'Preparing PDF...';
 });
 document.getElementById('save-csv').addEventListener('click', () => {
   headerFromBox();
