@@ -2,7 +2,7 @@ import os
 import re
 from datetime import date
 
-from flask import Flask, Response, render_template, request
+from flask import Flask, Response, jsonify, render_template, request, send_from_directory, url_for
 from markupsafe import Markup, escape
 
 import export
@@ -129,6 +129,21 @@ def tutorial():
     }
     return render_template("tutorial.html", ex={k: v["text"] for k, v in EXAMPLES.items()},
                            previews=previews, facts=facts)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Browsers ask for /favicon.ico at the site root even when no <link> points there."""
+    return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/x-icon")
+
+
+@app.route("/site.webmanifest")
+def webmanifest():
+    icon = lambda size: {"src": url_for("static", filename=f"android-chrome-{size}x{size}.png"),
+                         "sizes": f"{size}x{size}", "type": "image/png"}
+    return jsonify({"name": "TSD Route Sheets", "short_name": "Route Sheets",
+                    "icons": [icon(192), icon(512)], "theme_color": "#ffffff",
+                    "background_color": "#ffffff", "display": "browser"})
 
 
 @app.route("/pdf", methods=["POST"])
