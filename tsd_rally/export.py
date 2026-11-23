@@ -12,7 +12,7 @@ import tsd
 
 FIRST = 8                      # first data row
 HEADERS = [
-    "Type", "Section", "#", "Mileage", "Hide mileage", "Instruction", "Speed", "Pause", "Suffix",
+    "Type", "Section", "RI #", "Mileage", "Hide mileage", "Instruction", "Speed", "Pause", "Suffix",
     "General", "Checkpoint", "Out type", "Out clock (minutes if REL)",
     "Full instruction", "Time to instr.", "Elapsed", "Perfect time", "Out time", "CP time",
     "Speed in effect (mph)", "Last mileage", "Leg distance", "Time to instr. (sec)",

@@ -75,7 +75,7 @@
 <p>Choose <b>Participant</b> and click <b>Generate printable output</b>. The sheet opens in a new browser tab.</p>
 {{ preview('simple_participant','Participant sheet for the simple route') }}
 <ul>
- <li><b>#</b> is the instruction number, then the <b>Mileage</b> and the <b>Instruction</b>.</li>
+ <li><b>RI #</b> is the route instruction number, then the <b>Mileage</b> and the <b>Instruction</b>.</li>
  <li>The speed you entered is added to the end of the instruction as <b>CAST 30</b> (change average speed to).</li>
  <li>When printed, the type is large and high-contrast with extra space around each row, so it can be read in a moving vehicle.</li>
 </ul>
@@ -122,7 +122,7 @@
 <pre class="code">{{ ex.checkpoint }}</pre>
 {{ preview('checkpoint_master','Rally master sheet: the checkpoint is highlighted and shows its CP time', 420) }}
 <ul>
- <li>On the rally master sheet the checkpoint is highlighted, its <b>#</b> column says <b>CP</b> instead of a number, and its <b>CP time</b> is filled in.</li>
+ <li>On the rally master sheet the checkpoint is highlighted, its <b>RI #</b> column says <b>CP</b> instead of a number, and its <b>CP time</b> is filled in.</li>
  <li><b>CP time</b> is the time since the previous checkpoint &mdash; or, for the first checkpoint after the start or an out point, the time since that start or out time. Here CP 1 shows <b>{{ facts.cp_time }}</b> (<b>{{ facts.cp_time_dec }}</b> in decimal minutes).</li>
 </ul>
 {{ preview('checkpoint_participant','Participant sheet: the checkpoint is left out and the numbers carry on', 400) }}

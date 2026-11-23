@@ -50,6 +50,9 @@ def read_settings(f, errors):
     return text, meta, start, car
 
 
+RI_HEADING = "RI\u00a0#"   # route instruction number; the non-breaking space keeps it on one line
+
+
 def _mile_text(r, mode):
     if r.is_note or r.mileage is None:
         return ""
@@ -125,7 +128,7 @@ def build_sheet(f):
                 blocks.append({"type": "heading", "text": seg.title + (" (not timed)" if master else "")})
             if not seg.rows:
                 continue
-            head = [{"t": "#", "cls": "c"}, {"t": "Mileage"}, {"t": "Instruction"}] + ([{"t": "Notes"}] if master else [])
+            head = [{"t": RI_HEADING, "cls": "c"}, {"t": "Mileage"}, {"t": "Instruction"}] + ([{"t": "Notes"}] if master else [])
             rows = []
             for r in seg.rows:
                 cells = [{"t": str(r.num), "cls": "c"}, {"t": _mile_text(r, mode), "cls": "n"},
@@ -150,7 +153,7 @@ def build_sheet(f):
                 {"label": "Out point:", "text": " ".join(l for l in tsd.split_lines(first.instruction) if l), "rich": True},
                 {"label": "Out time:", "text": clock(seg.base) + (f" ({note})" if note else "")},
                 {"label": "First leg speed:", "text": "%g mph" % first.speed}]})
-        head = [{"t": "#", "cls": "c"}, {"t": "Mileage"}]
+        head = [{"t": RI_HEADING, "cls": "c"}, {"t": "Mileage"}]
         if has_leg:
             head.append({"t": "Leg"})
         head.append({"t": "Instruction"})

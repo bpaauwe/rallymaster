@@ -66,7 +66,7 @@ def _width(text, size, bold):
 
 
 def _longest_word(text, size, bold):
-    return max((_width(w, size, bold) for w in text.split()), default=0)
+    return max((_width(w, size, bold) for w in re.split(r"[ \t\r\n]+", text)), default=0)   # non-breaking spaces don't split
 
 
 BORDER = 1.5   # table border width in points
