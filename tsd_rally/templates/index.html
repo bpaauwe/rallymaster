@@ -96,7 +96,7 @@
  <details class="acc sub"><summary>Output types and printing</summary>
   <table class="ref">
    <tr><th>Output</th><th>What it shows</th></tr>
-   <tr><td>Participant</td><td>Instruction numbers, mileage and instructions (with Pause, CAST and suffix). Checkpoints, General notes and master-only mileages are left out. Leg distances are optional.</td></tr>
+   <tr><td>Participant</td><td>Instruction numbers, mileage and instructions (with Pause, CAST and suffix). Checkpoints, General notes and master-only mileages are left out. Leg distances and the section headings (Odometer Check, Rally, Transit Zone) are optional.</td></tr>
    <tr><td>Rally master</td><td>Every line, including checkpoints and notes, plus time to instruction, elapsed, perfect time, out time and CP time, and an out point box for each timed leg.</td></tr>
    <tr><td>Measure</td><td>Every line in the participant layout, with blank mileage cells to write in. No calculations.</td></tr>
   </table>
@@ -148,6 +148,8 @@
   <div class="set" id="opt-resolution"><label>Time resolution
    <select name="resolution"><option value="second">Seconds</option><option value="decimal">Decimal minutes (1/100 min)</option></select></label>
    <span class="hint">Rally master times as hh:mm:ss, or as hh:mm.hh with durations in decimal minutes (1/100 of a minute). Available when the output is Rally master.</span></div>
+  <div class="set" id="opt-headings"><label><input type="checkbox" name="hide_headings"> Hide section headings</label>
+   <span class="hint">Leaves out the Odometer Check, Rally and Transit Zone headings. Available when the output is Participant.</span></div>
   <div class="set" id="opt-leg"><label><input type="checkbox" name="show_leg"> Show leg distance</label>
    <span class="hint">Adds a leg distance column. Available when the output is Participant.</span></div>
  </details>
@@ -350,6 +352,7 @@ function syncOptions() {
   };
   set('opt-resolution', mode === 'master');
   set('opt-leg', mode === 'participant');
+  set('opt-headings', mode === 'participant');
 }
 document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', syncOptions));
 syncOptions();

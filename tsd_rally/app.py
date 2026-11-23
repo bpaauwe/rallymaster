@@ -181,7 +181,8 @@ def generate():
     return render_output(request.form)
 
 
-FORM_KEYS = ("data", "mode", "title", "subtitle", "event_date", "start_time", "car", "resolution", "show_leg")
+FORM_KEYS = ("data", "mode", "title", "subtitle", "event_date", "start_time", "car", "resolution", "show_leg",
+             "hide_headings")
 
 
 def render_output(f, preview=False):

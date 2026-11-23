@@ -62,6 +62,7 @@ def build_sheet(f):
     mode = f.get("mode", "participant")
     decimal = f.get("resolution") in ("decimal", "minute")   # decimal minutes (1/100 min)
     show_leg = bool(f.get("show_leg"))
+    headings = not (mode == "participant" and f.get("hide_headings"))   # participant sheet only
     header_errors = []
     text, meta, start, car = read_settings(f, header_errors)
     segments, errors = tsd.parse_input(text)
@@ -120,7 +121,8 @@ def build_sheet(f):
     blocks = []
     for seg in segments:
         if seg.kind != "rally":
-            blocks.append({"type": "heading", "text": seg.title + (" (not timed)" if master else "")})
+            if headings:
+                blocks.append({"type": "heading", "text": seg.title + (" (not timed)" if master else "")})
             if not seg.rows:
                 continue
             head = [{"t": "#", "cls": "c"}, {"t": "Mileage"}, {"t": "Instruction"}] + ([{"t": "Notes"}] if master else [])
@@ -135,7 +137,7 @@ def build_sheet(f):
             continue
         first = seg.rows[0]
         shown = seg.rows if mode in ("master", "measure") else [r for r in seg.rows if not r.is_cp]
-        if len(segments) > 1:
+        if len(segments) > 1 and headings:
             blocks.append({"type": "heading", "text": "Rally"})
         if first.is_out and master:
             if first.out_kind == "tod":

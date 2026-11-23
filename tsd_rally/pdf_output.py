@@ -260,7 +260,7 @@ def build_pdf(model):
         elif b["type"] == "banner":
             add(_banner(b, k), 12, 12)
         else:
-            add(_table(b, mode, total, k), 0, 0)
+            add(_table(b, mode, total, k), 14 if prev == "table" else 0, 0)   # tables with no heading between
         prev = b["type"]
     buf = io.BytesIO()
     pad = 6   # reportlab's default frame padding; subtracted so content sits exactly at the margins
