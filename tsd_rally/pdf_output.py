@@ -12,6 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import registerFontFamily, stringWidth
 from reportlab.pdfbase.ttfonts import TTFont
@@ -219,6 +220,32 @@ def _canvas_class(left, right):
 
     return NumberedCanvas
 
+LOGO_W, LOGO_GAP = 144, 12     # 2in logo box and 1rem gap, in layout points (scaled by k like everything else)
+
+
+def _header(parts, logo, k):
+    """The title / subtitle / date flowables. With a logo, they go in the left cell of a two-column
+    table and the logo is fitted (aspect kept, right-aligned) into a box as tall as that text."""
+    data = sheet.logo_bytes(logo)
+    if not data:
+        return parts
+    try:
+        box_w, gap = LOGO_W * k, LOGO_GAP * k
+        text_w = PAGE_W - box_w - gap
+        h = sum(p.wrap(text_w, 10000)[1] for p in parts)       # height of the text block
+        iw, ih = ImageReader(io.BytesIO(data)).getSize()
+        s = min(box_w / iw, h / ih)
+        img = Image(io.BytesIO(data), iw * s, ih * s, mask="auto")
+    except Exception:
+        return parts                                           # unreadable image: print without it
+    t = Table([[parts, img]], colWidths=[text_w + gap, box_w], hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (0, 0), gap),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ("VALIGN", (0, 0), (0, 0), "TOP"), ("VALIGN", (1, 0), (1, 0), "MIDDLE"),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT")]))
+    return [t]
 
 def build_pdf(model):
     """model = sheet.build_sheet(...). Returns the PDF as bytes.
@@ -230,12 +257,23 @@ def build_pdf(model):
     need = max([sum(_measure(b, mode)[1]) for b in tables] + [PAGE_W])
     k = PAGE_W / need                                    # 1 unless a table is too wide
     total = need                                         # layout width before scaling
+    head = [Paragraph(escape(model["title"]), style(26 * k, True, leading=26 * k * LH))]
+    if model["subtitle"]:
+        head += [Spacer(1, 3 * k), Paragraph(escape(model["subtitle"]), style(18 * k, leading=18 * k * LH))]
+    meta = (model["date_text"] + " &middot; " if model["date_text"] else "") + escape(model["label"])
+    head += [Spacer(1, 4.2 * k), Paragraph(meta, style(14 * k, leading=14 * k * LH))]
+    story = _header(head, model.get("logo"), k) + [
+        Spacer(1, 6 * k), HRFlowable(width="100%", thickness=2.25 * k, color=colors.black,
+                                     spaceBefore=0, spaceAfter=0)]
+
+    """
     story = [Paragraph(escape(model["title"]), style(26 * k, True, leading=26 * k * LH))]
     if model["subtitle"]:
         story += [Spacer(1, 3 * k), Paragraph(escape(model["subtitle"]), style(18 * k, leading=18 * k * LH))]
     meta = (model["date_text"] + " &middot; " if model["date_text"] else "") + escape(model["label"])
     story += [Spacer(1, 4.2 * k), Paragraph(meta, style(14 * k, leading=14 * k * LH)), Spacer(1, 6 * k),
               HRFlowable(width="100%", thickness=2.25 * k, color=colors.black, spaceBefore=0, spaceAfter=0)]
+    """
 
     # Space between blocks works like CSS margins: the gap is the larger of the margin below one
     # block and the margin above the next (they collapse), not the two added together.

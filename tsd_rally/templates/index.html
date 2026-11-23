@@ -128,6 +128,11 @@
   <label>Title <input name="title" id="title" value="{{ form.title }}" size="24"></label>
   <label>Subtitle <input name="subtitle" id="subtitle" value="{{ form.subtitle }}" size="24" placeholder="(optional)"></label>
   <label>Date <input type="date" name="event_date" id="event_date" value="{{ today }}"></label>
+  <span class="grp">
+   <label>Logo <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+   <button type="button" id="logo-clear" hidden>Remove</button>
+   <input type="hidden" name="logo" id="logo">
+  </span>
  </div>
 
  <div class="row">
@@ -274,6 +279,43 @@ function pullHeader() {
   return (done.length ? ' - header applied: ' + done.join(', ') : '') +
          (bad.length ? ' - could not read ' + bad.join(', ') : '');
 }
+
+// Logo: shrink in the browser so the data URL stays small, then keep it in the hidden field
+const logoField = document.getElementById('logo'), logoClear = document.getElementById('logo-clear');
+function encodeLogo(img, maxDim, type) {
+  const s = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(img.naturalWidth * s));
+  c.height = Math.max(1, Math.round(img.naturalHeight * s));
+  const g = c.getContext('2d');
+  if (type === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+  g.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL(type, 0.88);
+}
+document.getElementById('logo-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const keepAlpha = file.type !== 'image/jpeg';
+    let url = '';
+    for (const dim of [600, 400, 250]) {            // PNG keeps transparency; shrink until small enough
+      url = encodeLogo(img, dim, keepAlpha ? 'image/png' : 'image/jpeg');
+      if (url.length < 400000) break;
+    }
+    if (url.length >= 400000) url = encodeLogo(img, 400, 'image/jpeg');   // last resort: JPEG on white
+    logoField.value = url;
+    logoClear.hidden = false;
+    status.textContent = 'Logo added: ' + file.name;
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => { status.textContent = 'Could not read image ' + file.name; };
+  img.src = URL.createObjectURL(file);
+});
+logoClear.addEventListener('click', () => {
+  logoField.value = ''; logoClear.hidden = true; status.textContent = 'Logo removed';
+});
 
 function loadFile(file) {
   if (!file) return;

@@ -6,6 +6,7 @@ always show the same text.
 """
 import re
 from datetime import datetime
+import base64
 
 import tsd
 
@@ -14,13 +15,25 @@ BOLD_ITALIC_RE = re.compile(r"\*\*\*(.+?)\*\*\*")
 BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
 ITALIC_RE = re.compile(r"(?<![\w*])\*(?!\s)(.+?)(?<![\s*])\*(?![\w*])")
 
-
 def apply_markup(escaped, bold_italic, bold, italic):
     """Replace the markup in already-escaped text. Each argument is a re.sub template using \\1."""
     s = BOLD_ITALIC_RE.sub(bold_italic, escaped)
     s = BOLD_RE.sub(bold, s)
     return ITALIC_RE.sub(italic, s)
 
+
+# A logo travels as a data URL; only PNG/JPEG in this exact shape is accepted
+LOGO_RE = re.compile(r"data:image/(?:png|jpeg);base64,([A-Za-z0-9+/=]+)")
+
+def logo_bytes(url):
+    """Decoded image bytes of a valid logo data URL, else None."""
+    m = LOGO_RE.fullmatch(url or "")
+    if not m:
+        return None
+    try:
+        return base64.b64decode(m.group(1), validate=True)
+    except ValueError:
+        return None
 
 def pretty_date(s):
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y", "%b %d, %Y", "%d %B %Y"):
@@ -195,4 +208,5 @@ def build_sheet(f):
         "subtitle": meta.get("subtitle", f.get("subtitle", "")).strip(),
         "date_text": date_text, "notes": notes, "errors": errors, "blocks": blocks,
         "footer_left": f"{title} - {label}", "footer_right": date_text,
+        "logo": f.get("logo") if logo_bytes(f.get("logo")) else "",
     }

@@ -13,6 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Use ./templates if present, otherwise look next to app.py (flat download)
 TPL = os.path.join(HERE, "templates")
 app = Flask(__name__, template_folder=TPL if os.path.isdir(TPL) else HERE)
+app.config["MAX_FORM_MEMORY_SIZE"] = 2_000_000
 
 def rich(text):
     """Escape text, then turn ***word*** into bold italic, **word** into bold and *word* into
@@ -182,7 +183,7 @@ def generate():
 
 
 FORM_KEYS = ("data", "mode", "title", "subtitle", "event_date", "start_time", "car", "resolution", "show_leg",
-             "hide_headings")
+             "hide_headings", "logo")
 
 
 def render_output(f, preview=False):

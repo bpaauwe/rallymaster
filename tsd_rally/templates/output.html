@@ -9,6 +9,12 @@
  body{font-family:system-ui,sans-serif;margin:1.5rem}
  .title-area{border-bottom:3px solid #000;margin-bottom:1rem;padding-bottom:.5rem}
  .title-area h1{margin:0}
+ .title-area .title-text{min-width:0}
+ .title-area.has-logo{display:flex;align-items:stretch;gap:1rem}
+ .title-area.has-logo .title-text{flex:1 1 auto}
+ .logo-box{flex:0 0 2in;position:relative}
+ .logo-box img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;
+  object-fit:contain;object-position:right center}
  .subtitle{font-size:1.3rem;margin-top:.25rem}
  .meta{margin-top:.35rem;font-size:1.05rem}
  table{border-collapse:collapse;width:100%}
@@ -62,10 +68,13 @@
   {% for k, v in fields.items() %}{% if k == 'data' %}<textarea name="data" hidden>{{ v }}</textarea>{% else %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
   <button>Download PDF</button></form>
  <small>Page numbers print in the footer in Chrome and Edge (v131+). In other browsers, turn on &ldquo;Headers and footers&rdquo; in the print dialog. If you get two sets of page numbers, turn that option off. The PDF has its own page numbers.</small></div>{% endif %}
-<header class="title-area">
- <h1>{{ title }}</h1>
- {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
- <div class="meta">{% if date_text %}{{ date_text }} &middot; {% endif %}{{ label }}</div>
+<header class="title-area{% if logo %} has-logo{% endif %}">
+ <div class="title-text">
+  <h1>{{ title }}</h1>
+  {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
+  <div class="meta">{% if date_text %}{{ date_text }} &middot; {% endif %}{{ label }}</div>
+ </div>
+ {% if logo %}<div class="logo-box"><img src="{{ logo }}" alt=""></div>{% endif %}
 </header>
 {% for n in notes %}<p>{{ n }}</p>
 {% endfor %}
