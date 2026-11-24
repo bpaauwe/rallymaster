@@ -139,7 +139,7 @@ def build_sheet(f):
         if seg.kind != "rally":
             if headings:
                 blocks.append({"type": "heading", "text": seg.title + (" (not timed)" if master else "")})
-            if not seg.rows:
+            if not seg.rows and not seg.ends_route:
                 continue
             head = [{"t": RI_HEADING, "cls": "c"}, {"t": "Mileage"}, {"t": "Instruction"}] + ([{"t": "Notes"}] if master else [])
             rows = []
@@ -149,6 +149,9 @@ def build_sheet(f):
                 if master:
                     cells.append({"t": r.general, "rich": True})
                 rows.append({"cls": "", "cells": cells})
+            if seg.ends_route:      # the route ends inside a transit zone, so say where the zone ends
+                cells = [{"t": "", "cls": "c"}, {"t": "", "cls": "n"}, {"lines": ["**End of transit zone**"]}]
+                rows.append({"cls": "end", "cells": cells + ([{"t": "", "rich": True}] if master else [])})
             blocks.append({"type": "table", "head": head, "rows": rows})
             continue
         first = seg.rows[0]

@@ -59,6 +59,9 @@ OUTPOINT | 18.00 | Out point: Fire Station | TOD 10:28 | 35
 [RALLY]
 18.50 | Right at stop sign | | | FLR
 22.00 | Checkpoint 2 | | | | CP 2 - hidden
+
+[TRANSIT]
+22.50 | Left at the church
 25.00 | FINISH | | | | Finish
 """
 

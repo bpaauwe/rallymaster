@@ -52,6 +52,7 @@ class Segment:
     base: float = 0.0            # absolute clock seconds at the start of a timed segment
     out_note: str = ""           # rally master banner: how the out time was worked out
     out_arrival: float | None = None
+    ends_route: bool = False     # a transit zone that runs to the finish (no out point needed)
     line_no: int = 0
 
     @property
@@ -255,10 +256,13 @@ def parse_input(text: str):
             cur.rows.append(row)
         except ValueError as e:
             errors.append(f"Line {n}: {e} -> '{raw}'")
-    for seg in segments:
-        if seg.kind in UNTIMED and not seg.has_out:
-            errors.append(f"Line {seg.line_no}: {seg.title} has no OUTPOINT to end it")
     segments = [s for s in segments if s.rows or s.kind in UNTIMED]
+    for i, seg in enumerate(segments):
+        if seg.kind in UNTIMED and not seg.has_out:
+            if seg.kind == "transit" and i == len(segments) - 1:
+                seg.ends_route = True        # a transit zone can run on to the finish
+            else:
+                errors.append(f"Line {seg.line_no}: {seg.title} has no OUTPOINT to end it")
     return segments, errors
 
 

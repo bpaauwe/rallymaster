@@ -166,6 +166,8 @@ def _table(block, mode, total, k):
             cmds.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor("#fff3b0")))
         elif r["cls"] == "out":
             cmds.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor("#cfe6ff")))
+    if len(rows) >= 2 and rows[-1]['cls'] == 'end':      # keep 'End of transit zone' with the last line
+        cmds.append(("NOSPLIT", (0, len(rows) - 1), (-1, len(rows))))
     t.setStyle(TableStyle(cmds))
     return t
 
