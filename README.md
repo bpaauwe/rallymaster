@@ -63,6 +63,7 @@ mileage | instruction | speed | pause | suffix | general
 | `pdf_output.py` | PDF output (reportlab) |
 | `export.py` | Spreadsheet CSV with formulas |
 | `templates/` | Main page, printable output, tutorial |
+| `static/` | Favicon and app icons (regenerate with `python tools/make_icons.py`; source logo in `tools/`) |
 | `fonts/` | Bundled Liberation Sans for the PDF (see `fonts/LICENSE-LiberationSans.txt`) |
 
 ## Deployment
